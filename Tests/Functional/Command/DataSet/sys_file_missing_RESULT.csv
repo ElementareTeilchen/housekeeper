@@ -1,0 +1,9 @@
+sys_file
+,uid,pid,storage,missing,identifier
+,3,0,1,0,"/normal_file.txt"
+,4,0,1,1,"/failing_file1.php"
+
+sys_file_metadata
+,uid,file,sys_language_uid,title
+,3,3,0,"Normal File"
+,4,4,0,"Failing File"

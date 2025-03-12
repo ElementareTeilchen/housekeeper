@@ -1,0 +1,8 @@
+tt_content
+,uid,pid,bodytext
+,1,1,"This is text with an <a href=""t3://file?uid=1"">external link</a> to convert"
+,2,1,"This is another text with <img src=""t3://file?uid=1""/> image to convert"
+,3,1,"This is another text with relative <img src=""t3://file?uid=1""/> image to convert"
+,4,1,"This is another text with a page <a href=""t3://page?uid=1""/> link"
+,5,1,"This is another text with a page <a href=""/testpage""/> link"
+,6,1,"This is another text with <img sr=""https://example-other.com/fileadmin/test_file.png""/> link"

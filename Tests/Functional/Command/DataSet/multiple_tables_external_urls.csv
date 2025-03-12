@@ -1,0 +1,7 @@
+tt_content
+,uid,pid,bodytext
+,1,1,"This is text with an <a href=""https://example.com/fileadmin/test_file.png"">external link</a> to convert"
+
+pages
+,uid,pid,description
+,10,1,"See our image <a href=""https://example.com/fileadmin/test_file.png"">here</a>"

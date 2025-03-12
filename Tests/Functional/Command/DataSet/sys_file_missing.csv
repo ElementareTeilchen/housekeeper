@@ -1,0 +1,15 @@
+sys_file
+,uid,pid,storage,missing,identifier,identifier_hash
+,1,0,1,1,"/missing_file1.jpg","da7381281c6d67ca743144472b77617674c175d7"
+,2,0,1,1,"/test/missing_file2.jpg","50bff569f47302d4be8c93492390641e9f750523"
+,3,0,1,0,"/normal_file.txt","f1c9645dbc14efddc7d8a322685f26eb88236e99"
+,4,0,1,1,"/failing_file1.php","2f33072a7b1b1139f80a4c751d78699dd9f0f103"
+,5,0,1,1,"/missing_file1.jpg","da7381281c6d67ca743144472b77617674c175d7"
+
+sys_file_metadata
+,uid,file,sys_language_uid,title
+,1,1,0,"Missing File 1"
+,2,2,0,"Missing File 2"
+,3,3,0,"Normal File"
+,4,4,0,"Failing File"
+,5,5,0,"Missing File 1 Duplicate"

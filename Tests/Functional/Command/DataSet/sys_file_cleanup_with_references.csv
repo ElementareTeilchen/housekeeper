@@ -1,0 +1,4 @@
+sys_file_reference
+,uid,uid_local,uid_foreign,tablenames,fieldname
+,101,1,10,"tt_content","image"
+,102,4,11,"tt_content","image"

@@ -1,0 +1,36 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Elementareteilchen\Housekeeper\:
+    resource: '../Classes/*'
+
+  Elementareteilchen\Housekeeper\Command\Move\FalMoveCommand:
+    tags:
+      - name: 'console.command'
+        command: 'housekeeper:move'
+        description: 'Renames or moves an existing file or folder.'
+        schedulable: false
+
+  Elementareteilchen\Housekeeper\Command\Cleanup\MissingFilesCleanupCommand:
+    tags:
+      - name: 'console.command'
+        command: 'housekeeper:cleanup-missing'
+        description: 'Cleanup missing files.'
+        schedulable: false
+
+  Elementareteilchen\Housekeeper\Command\Cleanup\FilesCleanupCommand:
+    tags:
+      - name: 'console.command'
+        command: 'housekeeper:cleanup-files'
+        description: 'Cleanup files based on their identifier.'
+        schedulable: false
+
+  Elementareteilchen\Housekeeper\Command\Consolidate\ConsolidateExternalUrlsCommand:
+    tags:
+      - name: 'console.command'
+        command: 'housekeeper:consolidate-external-urls'
+        description: 'Find external urls in RTEs and replace them with the internal link.'
+        schedulable: true

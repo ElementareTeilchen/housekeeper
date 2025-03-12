@@ -1,0 +1,4 @@
+tt_content
+,uid,pid,bodytext
+,1,1,"This is some text without external URLs"
+,2,1,"Internal link to <a href=""t3://page?uid=5"">a page</a>"

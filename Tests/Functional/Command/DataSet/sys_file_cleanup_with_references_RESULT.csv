@@ -1,0 +1,11 @@
+sys_file
+,uid,storage,identifier,missing
+,4,1,"/4_normal_file.txt",0
+,5,2,"/1_test_file.png",0
+,6,2,"/2_test_file.png",0
+,7,2,"/3_test_file.png",0
+,8,2,"/4_normal_file.txt",0
+
+sys_file_reference
+,uid,uid_local,uid_foreign,tablenames,fieldname
+,102,4,11,"tt_content","image"

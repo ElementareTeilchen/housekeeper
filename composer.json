@@ -1,0 +1,56 @@
+{
+	"name": "elementareteilchen/housekeeper",
+	"description": "Typo3 CLI commands to clean up and execute fileadmin operations",
+	"type": "typo3-cms-extension",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Franz Kugelmann",
+			"email": "franz.kugelmann@elementare-teilchen.de"
+		},
+		{
+			"name": "Mathis Koblin",
+			"email": "mathis.koblin@elementare-teilchen.de"
+		}
+	],
+	"require": {
+		"php": "^8.2 || ^8.3 || ^8.4",
+		"ext-pdo": "*",
+		"typo3/cms-core": "^12.4 || ^13.4"
+	},
+	"require-dev": {
+		"typo3/testing-framework": "^8.2.4",
+		"phpspec/prophecy": "^1.16",
+		"php-parallel-lint/php-parallel-lint": "^1.4",
+		"phpunit/phpunit": "^10.1 || ^11.0"
+	},
+	"conflict": {
+		"psr/container": "<1.1",
+		"typo3/testing-framework": ">=7.0.0 <7.0.4"
+	},
+	"extra": {
+		"typo3/cms": {
+			"extension-key": "housekeeper",
+			"web-dir": ".Build/web"
+		}
+	},
+	"autoload": {
+		"psr-4": {
+			"Elementareteilchen\\Housekeeper\\": "Classes/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Elementareteilchen\\Housekeeper\\Tests\\": "Tests"
+		}
+	},
+	"config": {
+		"sort-packages": true,
+		"vendor-dir": ".Build/vendor",
+		"bin-dir": ".Build/bin",
+		"allow-plugins": {
+			"typo3/cms-composer-installers": true,
+			"typo3/class-alias-loader": true
+		}
+	}
+}

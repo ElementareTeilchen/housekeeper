@@ -1,0 +1,7 @@
+sys_file
+,uid,pid,storage,missing,identifier,identifier_hash
+,1,0,1,1,"/missing_file1.jpg","da7381281c6d67ca743144472b77617674c175d7"
+,2,0,2,1,"/missing_file2.jpg","4b79dab9a5cd466c16b25c755d8e20be5d9686e0"
+,3,0,1,0,"/normal_file1.jpg",""
+,4,0,2,0,"/normal_file2.jpg",""
+

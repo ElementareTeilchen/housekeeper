@@ -1,0 +1,8 @@
+sys_file
+,uid,pid,storage,identifier,missing
+,1,0,1,"/missing_file1.jpg",1
+,2,0,1,"/normal_file.txt",0
+sys_file_reference,,,,,
+,uid,pid,uid_local,uid_foreign,tablenames,fieldname
+,101,0,1,10,"tt_content","image"
+,102,0,2,11,"tt_content","image"
