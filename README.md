@@ -92,7 +92,7 @@ Cleanup missing files. Files marked as missing are touched and marked as not
 missing before deletion.
 
 ```
-typo3 housekeeper:missing-files-cleanup [options]
+typo3 housekeeper:cleanup-missing [options]
 ```
 
 #### Options

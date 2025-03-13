@@ -1,6 +1,6 @@
 {
 	"name": "elementareteilchen/housekeeper",
-	"description": "Typo3 CLI commands to clean up and execute fileadmin operations",
+	"description": "CLI commands to keep your TYPO3 instance lean and clean",
 	"type": "typo3-cms-extension",
 	"license": "GPL-2.0-or-later",
 	"authors": [
