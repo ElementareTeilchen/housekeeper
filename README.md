@@ -69,14 +69,14 @@ system's API delete command.
 Files which are still in use are omitted and shown in the output.
 
 ```
-typo3 housekeeper:files-cleanup <identifier> [options]
+typo3 housekeeper:cleanup-files <identifier> [options]
 ```
 
 #### Parameters
 
-| Parameter      | Description                                                              | Required |
-|----------------|--------------------------------------------------------------------------|----------|
-| `<identifier>` | Identifiers containing this string should be deleted (e.g., ".jpg.webp") | Yes      |
+| Parameter      | Description                                                | Required |
+|----------------|------------------------------------------------------------|----------|
+| `<identifier>` | Files matching this string will be deleted | Yes      |
 
 #### Options
 
@@ -85,6 +85,13 @@ typo3 housekeeper:files-cleanup <identifier> [options]
 | `--storageId`       | `-s`  | Storage id                                | 1 (fileadmin) |
 | `--dry-run`         | -     | Only pretend deletion                     | false         |
 | `--update-refindex` | -     | Automatically updates the reference index | false         |
+
+#### Examples
+
+```
+# delete all files that have .jpg in the identifier
+typo3 housekeeper:cleanup-files .jpg
+```
 
 ### Missing Files Cleanup Command
 
