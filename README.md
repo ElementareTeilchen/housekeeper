@@ -139,7 +139,7 @@ typo3 housekeeper:consolidate-external-urls <site> [options]
 | `--log`     | `-l`  | Write output to log file                         | false     |
 | `--dry-run` | -     | Only simulate changes without saving them        | false     |
 
-The log file is written to `var/log/consolidateExternalUrlsCommand_DATE.log`.
+The log file is written to `var/log/housekeeper:consolidate-external-urls_DATE.log`.
 
 #### Examples
 

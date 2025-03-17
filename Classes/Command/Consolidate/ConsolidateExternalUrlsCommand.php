@@ -75,7 +75,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             ->addOption('domain', '-d', InputOption::VALUE_REQUIRED, 'The domain to match. E.g. www.your-website.com')
             ->addOption('path', '-p', InputOption::VALUE_REQUIRED, 'The path to match. E.g. fileadmin. Defaults to fileadmin')
             ->addOption('all', '-a', InputOption::VALUE_NONE, 'Run on all fields defined in $GLOBALS[\'TCA\']')
-            ->addOption('log', '-l', InputOption::VALUE_NONE, 'Write output to log file in var/log/consolidateExternalUrlsCommand_DATE.log')
+            ->addOption('log', '-l', InputOption::VALUE_NONE, 'Write output to log file in var/log/housekeeper:consolidate-external-urls_DATE.log')
             ->addArgument('site', InputArgument::REQUIRED, 'The identifier of the site');
     }
 
@@ -109,7 +109,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             }
 
             if ($this->log) {
-                $logFile = Environment::getVarPath() . '/log/consolidateExternalUrlsCommand_' . date('Y-m-d_H-i-s') . '.log';
+                $logFile = Environment::getVarPath() . '/log/housekeeper:consolidate-external-urls_' . date('Y-m-d_H-i-s') . '.log';
                 $logFileHandle = fopen($logFile, 'w');
                 $verbosity = $output->getVerbosity();
                 // if there is no verbosity set, set it to very verbose (for the scheduler)
@@ -487,29 +487,10 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             $this->io->info('Getting tables and fields from TCA');
         }
 
-        $search = function (array $array, string $field, string $term) {
-            $iterator = new \RecursiveArrayIterator($array);
-            $leafs = new \RecursiveIteratorIterator($iterator);
-            $search = new \RegexIterator($leafs, sprintf('~%s~', $term));
-            foreach ($search as $value) {
-                $key = $leafs->key();
-                if ($key === $field) {
-
-                    $keys = [];
-                    for ($i = $leafs->getDepth() - 1; $i >= 0; $i--) {
-                        if ($i === 2 || $i === 0) {
-                            array_unshift($keys, $leafs->getSubIterator($i)->key());
-                        }
-                    }
-                    yield $keys;
-                }
-            }
-        };
-
-        $results = [];
-        $matches = iterator_to_array($search($GLOBALS['TCA'], 'softref', 'typolink'));
-        $matches = array_merge($matches, iterator_to_array($search($GLOBALS['TCA'], 'type', '^link$')));
+        $matches = $this->findMatchesInTCA('softref', 'typolink');
+        $matches = array_merge($matches, $this->findMatchesInTCA('type', '^link$'));
         $matches = array_unique($matches, SORT_REGULAR);
+        sort($matches);
 
         if ($this->io->isVerbose()) {
             $this->logTCAMatches($matches);
@@ -564,7 +545,6 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
 
     /**
      * @param array $allResults
-     * @return void
      */
     public function printAllResults(array $allResults): void
     {
@@ -578,5 +558,43 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             ];
         }
         $this->io->table(['table.field', 'recordsProcessed', 'totalMatches', 'totalReplacedMatches'], $resultsMatrix);
+    }
+
+    /**
+     * @param string $field
+     * @param string $term
+     * @return array
+     */
+    public function findMatchesInTCA(string $field, string $term): array
+    {
+        $search = $this->searchTCA();
+        return iterator_to_array($search($GLOBALS['TCA'], $field, $term));
+    }
+
+    /**
+     * Traverse the TCA array and search for a term in a specific field
+     * @return \Closure
+     */
+    public function searchTCA(): \Closure
+    {
+        $search = function (array $array, string $field, string $term) {
+            $iterator = new \RecursiveArrayIterator($array);
+            $leafs = new \RecursiveIteratorIterator($iterator);
+            $search = new \RegexIterator($leafs, sprintf('~%s~', $term));
+            foreach ($search as $value) {
+                $key = $leafs->key();
+                if ($key === $field) {
+
+                    $keys = [];
+                    for ($i = $leafs->getDepth() - 1; $i >= 0; $i--) {
+                        if ($i === 2 || $i === 0) {
+                            array_unshift($keys, $leafs->getSubIterator($i)->key());
+                        }
+                    }
+                    yield $keys;
+                }
+            }
+        };
+        return $search;
     }
 }
