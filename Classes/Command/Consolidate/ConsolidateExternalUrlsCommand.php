@@ -482,7 +482,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
         $search = function (array $array, string $field, string $term) {
             $iterator = new \RecursiveArrayIterator($array);
             $leafs = new \RecursiveIteratorIterator($iterator);
-            $search = new \RegexIterator($leafs, sprintf('~%s~', preg_quote($term, '~')));
+            $search = new \RegexIterator($leafs, sprintf('~%s~', $term));
             foreach ($search as $value) {
                 $key = $leafs->key();
                 if ($key === $field) {
@@ -499,7 +499,8 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
         };
 
         $results = [];
-        $matches = $search($GLOBALS['TCA'], 'softref', 'typolink');
+        $matches = iterator_to_array($search($GLOBALS['TCA'], 'softref', 'typolink'));
+        $matches = array_merge($matches, iterator_to_array($search($GLOBALS['TCA'], 'type', '^link$')));
 
         if ($this->io->isVerbose()) {
             $this->io->writeln('<info>Found the following:</info>');
@@ -513,6 +514,10 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             }
         }
         foreach ($results as $tableName => $fieldName) {
+            if (empty($fieldName)) {
+                $this->io->warning("Skipping $tableName as no field could be found");
+                continue;
+            }
             if ($this->io->isVerbose()) {
                 $this->io->info("Running on $tableName.$fieldName");
             }
