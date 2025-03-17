@@ -1,7 +1,8 @@
 tt_content
-,uid,pid,bodytext
-,1,1,"This is text with an <a href=""t3://file?uid=1"">external link</a> to convert"
+,uid,pid,bodytext,header_link
+,1,0,"Bodytext link <a href=""t3://file?uid=1"">external link</a> to convert",
+,2,0,,"Header link <a href=""t3://file?uid=1"">external link</a> to convert"
 
-pages
-,uid,pid,description
-,10,1,"See our image <a href=""t3://file?uid=1"">here</a>"
+sys_file_reference
+,uid,pid,link
+,1,0,t3://file?uid=1

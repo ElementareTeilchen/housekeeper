@@ -107,7 +107,7 @@ class ConsolidateExternalUrlsCommandTest extends AbstractTestCase
         self::assertEquals(0, $result['status']);
     }
 
-    //#[Test]
+    #[Test]
     public function commandProcessesAllTcaFieldsWhenAllOptionIsUsed(): void
     {
         $this->importCSVDataSet(__DIR__ . '/DataSet/multiple_tables_external_urls.csv');

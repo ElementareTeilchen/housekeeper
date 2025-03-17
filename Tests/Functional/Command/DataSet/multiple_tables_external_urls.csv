@@ -1,7 +1,12 @@
 tt_content
-,uid,pid,bodytext
-,1,1,"This is text with an <a href=""https://example.com/fileadmin/test_file.png"">external link</a> to convert"
+,uid,pid,bodytext,header_link
+,1,0,"Bodytext link <a href=""https://example.com/fileadmin/test_file.png"">external link</a> to convert",
+,2,0,,"Header link <a href=""https://example.com/fileadmin/test_file.png"">external link</a> to convert"
 
-pages
-,uid,pid,description
-,10,1,"See our image <a href=""https://example.com/fileadmin/test_file.png"">here</a>"
+sys_file_reference
+,uid,pid,link
+,1,0,"https://example.com/fileadmin/test_file.png"
+
+sys_file
+,uid,pid,storage,identifier,missing
+,1,0,1,"/test_file.png",0

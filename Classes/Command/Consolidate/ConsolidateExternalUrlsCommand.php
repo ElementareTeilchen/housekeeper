@@ -150,7 +150,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
      * @param string $tableName The database table name
      * @param string $fieldName The database field name
      */
-    public function consolidateExternalUrls(string $tableName, string $fieldName)
+    public function consolidateExternalUrls(string $tableName, string $fieldName): array
     {
         $recordsProcessed = 0;
         $totalMatches = 0;
@@ -190,7 +190,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
                 if ($this->io->isVeryVerbose()) {
                     $this->io->writeln("<info>Updating {$tableName}[uid=$uid].{$fieldName}</info>");
                     if ($this->io->isDebug()) {
-                        $this->debugFieldUpdates($fieldValue, $fieldValue);
+                        $this->debugFieldUpdates($record[$fieldName], $fieldValue);
                     }
                 }
 
@@ -206,6 +206,8 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
         $this->io->info("Processed $recordsProcessed records of field {$tableName}.{$fieldName}
                     Found $totalMatches occurrences of potential external URLs
                     Replaced $totalReplacedMatches matches with internal links. ");
+
+        return [$recordsProcessed, $totalMatches, $totalReplacedMatches];
     }
 
     /**
@@ -507,28 +509,32 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
         $results = [];
         $matches = iterator_to_array($search($GLOBALS['TCA'], 'softref', 'typolink'));
         $matches = array_merge($matches, iterator_to_array($search($GLOBALS['TCA'], 'type', '^link$')));
+        $matches = array_unique($matches, SORT_REGULAR);
 
         if ($this->io->isVerbose()) {
-            $this->io->writeln('<info>Found the following:</info>');
+            $this->logTCAMatches($matches);
         }
+
+        $allResults = [];
         foreach ($matches as $index => $match) {
             $tableName = $match[0];
             $fieldName = $match[1];
-            $results[$tableName] = $fieldName;
-            if ($this->io->isVerbose()) {
-                $this->io->writeln("<comment>$tableName.$fieldName</comment>");
-            }
-        }
-        foreach ($results as $tableName => $fieldName) {
+
             if (empty($fieldName)) {
                 $this->io->warning("Skipping $tableName as no field could be found");
                 continue;
             }
+
             if ($this->io->isVerbose()) {
                 $this->io->info("Running on $tableName.$fieldName");
             }
-            $this->consolidateExternalUrls($tableName, $fieldName);
+
+            $allResults[$tableName . '.' . $fieldName] =
+                $this->consolidateExternalUrls($tableName, $fieldName);
         }
+
+        $this->io->info('Finished running on all link fields from TCA');
+        $this->printAllResults($allResults);
     }
 
     /**
@@ -540,5 +546,37 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
         $pattern = '(?:https?://' . $domain . ')?/' . $this->path . '/|https?://' . $domain . '/(?!' . $this->path . ')';
         $regexp = '((?:href|src)\\s*=\\s*"|^)((?:' . $pattern . ')[^"$]*)("|$)';
         return $regexp;
+    }
+
+    /**
+     * @param array $matches
+     * @return array
+     */
+    public function logTCAMatches(array $matches): void
+    {
+        $this->io->writeln('<info>Found the following:</info>');
+        foreach ($matches as $index => $match) {
+            if ($this->io->isVerbose()) {
+                $this->io->writeln("<comment>{$match[0]}.{$match[1]}</comment>");
+            }
+        }
+    }
+
+    /**
+     * @param array $allResults
+     * @return void
+     */
+    public function printAllResults(array $allResults): void
+    {
+        foreach ($allResults as $resultKey => $result) {
+            // build matrix of all results
+            $resultsMatrix[] = [
+                'table.field' => $resultKey,
+                'recordsProcessed' => $result[0],
+                'totalMatches' => $result[1],
+                'totalReplacedMatches' => $result[2],
+            ];
+        }
+        $this->io->table(['table.field', 'recordsProcessed', 'totalMatches', 'totalReplacedMatches'], $resultsMatrix);
     }
 }
