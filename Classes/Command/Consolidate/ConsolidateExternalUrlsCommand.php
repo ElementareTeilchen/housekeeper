@@ -40,10 +40,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
      */
     private array $languages = [];
 
-    private bool $all = false;
     private bool $log = false;
-    private ?string $table = null;
-    private ?string $field = null;
     private string $siteId = '';
     private string $domain = '';
     private string $path = self::DEFAULT_PATH;
@@ -96,13 +93,20 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             $this->initializeCommand($input, $output);
 
             $this->dryRun = $input->getOption('dry-run');
-            $this->all = $input->getOption('all');
             $this->log = $input->getOption('log');
             $this->domain = $input->getOption('domain');
             $this->path = $input->getOption('path') ?? 'fileadmin';
-            $this->table = $input->getOption('table');
-            $this->field = $input->getOption('field');
+
             $this->siteId = $input->getArgument('site');
+
+            $runOnAllFields = $input->getOption('all');
+            $tableName = $input->getOption('table');
+            $fieldName = $input->getOption('field');
+
+            if (!($tableName && $fieldName) && !$runOnAllFields) {
+                $this->io->error('Invalid parameters. Please specify either -t and -f or -a.');
+                return Command::INVALID;
+            }
 
             if ($this->log) {
                 $logFile = Environment::getVarPath() . '/log/consolidateExternalUrlsCommand_' . date('Y-m-d_H-i-s') . '.log';
@@ -117,22 +121,17 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
                 $this->io = new SymfonyStyle($input, $output);
             }
 
-            if (!($this->table && $this->field) && !$this->all) {
-                $this->io->error('Invalid parameters. Please specify either -t and -f or -a.');
-                return Command::INVALID;
-            }
-
             $site = $this->siteFinder->getSiteByIdentifier($this->siteId);
             $this->io->writeln('Getting languages for site ' . $this->siteId);
             $siteConfiguration = $site->getConfiguration();
             $this->languages = $siteConfiguration['languages'];
 
-            if ($this->all) {
+            if ($runOnAllFields) {
                 $this->runOnAllFromTCA();
             }
 
-            if ($this->table && $this->field) {
-                $this->consolidateExternalUrls();
+            if ($tableName && $fieldName) {
+                $this->consolidateExternalUrls($tableName, $fieldName);
             }
 
             if ($this->log && isset($logFileHandle)) {
@@ -147,27 +146,30 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
 
     /**
      * Consolidate external URLs
+     *
+     * @param string $tableName The database table name
+     * @param string $fieldName The database field name
      */
-    public function consolidateExternalUrls()
+    public function consolidateExternalUrls(string $tableName, string $fieldName)
     {
         $recordsProcessed = 0;
         $totalMatches = 0;
         $totalReplacedMatches = 0;
 
-        $result = $this->findAllWithExternalUrls();
+        $result = $this->findAllWithExternalUrls($tableName, $fieldName);
         $totalRecords = $result->rowCount();
 
         $regexp = $this->createRegexp();
 
         while ($record = $result->fetchAssociative()) {
 
-            $fieldValue = $record[$this->field];
+            $fieldValue = $record[$fieldName];
             $uid = $record['uid'];
             $pid = $record['pid'];
 
-            if ($this->table === 'tt_content' && $this->field === 'bodytext' && $record['CType'] === 'html') {
+            if ($tableName === 'tt_content' && $fieldName === 'bodytext' && $record['CType'] === 'html') {
                 if ($this->io->isVeryVerbose()) {
-                    $this->io->writeln("<comment>$recordsProcessed/$totalRecords: skipping CType 'html' record {$this->table}[uid=$uid].{$this->field} / pid=$pid</comment>");
+                    $this->io->writeln("<comment>$recordsProcessed/$totalRecords: skipping CType 'html' record {$tableName}[uid=$uid].{$fieldName} / pid=$pid</comment>");
                 }
                 continue;
             }
@@ -175,7 +177,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             $recordsProcessed++;
 
             if ($this->io->isVeryVerbose()) {
-                $this->io->writeln("<comment>$recordsProcessed/$totalRecords: checking record {$this->table}[uid=$uid].{$this->field} / pid=$pid</comment>");
+                $this->io->writeln("<comment>$recordsProcessed/$totalRecords: checking record {$tableName}[uid=$uid].{$fieldName} / pid=$pid</comment>");
             }
 
             [$matches, $replacedMatches, $fieldValue] = $this->processPattern($regexp, $fieldValue);
@@ -183,17 +185,17 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             $totalMatches += $matches;
             $totalReplacedMatches += $replacedMatches;
 
-            if ($fieldValue !== $record[$this->field]) {
+            if ($fieldValue !== $record[$fieldName]) {
 
                 if ($this->io->isVeryVerbose()) {
-                    $this->io->writeln("<info>updating {$this->table}[uid=$uid].{$this->field}</info>");
+                    $this->io->writeln("<info>Updating {$tableName}[uid=$uid].{$fieldName}</info>");
                     if ($this->io->isDebug()) {
                         $this->debugFieldUpdates($fieldValue, $fieldValue);
                     }
                 }
 
                 if (!$this->dryRun) {
-                    $this->updateRecord($uid, $fieldValue);
+                    $this->updateRecord($tableName, $fieldName, $uid, $fieldValue);
                 }
             }
 
@@ -201,7 +203,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
                 $this->logNoMatches($regexp, $fieldValue);
             }
         }
-        $this->io->info("Processed $recordsProcessed records of field {$this->table}.{$this->field}
+        $this->io->info("Processed $recordsProcessed records of field {$tableName}.{$fieldName}
                     Found $totalMatches occurrences of potential external URLs
                     Replaced $totalReplacedMatches matches with internal links. ");
     }
@@ -321,20 +323,22 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
     /**
      * Find all records with external URLs
      *
+     * @param string $tableName The database table name
+     * @param string $fieldName The database field name
      * @throws \Doctrine\DBAL\Exception
      */
-    private function findAllWithExternalUrls(): Result
+    private function findAllWithExternalUrls(string $tableName, string $fieldName): Result
     {
-        $select = ['uid', 'pid', $this->field];
+        $select = ['uid', 'pid', $fieldName];
         $quote = '';
 
-        if ($this->table === 'tt_content' && $this->field === 'bodytext') {
+        if ($tableName === 'tt_content' && $fieldName === 'bodytext') {
             $select[] = 'CType';
             $quote = '"';
         }
 
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable($this->table);
+            ->getQueryBuilderForTable($tableName);
 
         $pathPattern = '%' . $quote . '/' . $this->path . '/%';
         $httpsPattern = '%' . $quote . 'https://' . $this->domain . '/%';
@@ -342,12 +346,12 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
 
         return $queryBuilder
             ->select(...$select)
-            ->from($this->table)
+            ->from($tableName)
             ->where(
                 $queryBuilder->expr()->or(
-                    $queryBuilder->expr()->like($this->field, $queryBuilder->createNamedParameter($pathPattern)),
-                    $queryBuilder->expr()->like($this->field, $queryBuilder->createNamedParameter($httpsPattern)),
-                    $queryBuilder->expr()->like($this->field, $queryBuilder->createNamedParameter($httpPattern))
+                    $queryBuilder->expr()->like($fieldName, $queryBuilder->createNamedParameter($pathPattern)),
+                    $queryBuilder->expr()->like($fieldName, $queryBuilder->createNamedParameter($httpsPattern)),
+                    $queryBuilder->expr()->like($fieldName, $queryBuilder->createNamedParameter($httpPattern))
                 )
             )
             ->executeQuery();
@@ -356,24 +360,26 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
     /**
      * Update record
      *
+     * @param string $tableName The database table name
+     * @param string $fieldName The database field name
      * @param int $uid UID
      * @param string $newFieldValue New field value
      */
-    public function updateRecord(int $uid, string $newFieldValue): void
+    public function updateRecord(string $tableName, string $fieldName, int $uid, string $newFieldValue): void
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable($this->table);
+            ->getQueryBuilderForTable($tableName);
 
         $affectedRows = $queryBuilder
-            ->update($this->table)
+            ->update($tableName)
             ->where(
                 $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER))
             )
-            ->set($this->field, $newFieldValue)
+            ->set($fieldName, $newFieldValue)
             ->executeStatement();
 
         if ($affectedRows === 0) {
-            $this->io->warning("Failed to update {$this->table}[uid=$uid].{$this->field}");
+            $this->io->warning("Failed to update {$tableName}[uid=$uid].{$fieldName}");
         }
     }
 
@@ -392,8 +398,8 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             ->select('uid', 'identifier')
             ->from('sys_file')
             ->where(
-                $queryBuilder->expr()->like('missing', $queryBuilder->createNamedParameter(0, ParameterType::INTEGER)),
-                $queryBuilder->expr()->eq('identifier', $queryBuilder->createNamedParameter($identifier, ParameterType::STRING)),
+                $queryBuilder->expr()->eq('missing', $queryBuilder->createNamedParameter(0, ParameterType::INTEGER)),
+                $queryBuilder->expr()->eq('identifier', $queryBuilder->createNamedParameter($identifier, ParameterType::STRING))
             )
             ->executeQuery();
         return $result;
@@ -429,7 +435,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             ->from('pages')
             ->where(
                 $queryBuilder->expr()->eq('slug', $queryBuilder->createNamedParameter($slug)),
-                $queryBuilder->expr()->eq('sys_language_uid', $queryBuilder->createNamedParameter($languageId, ParameterType::INTEGER)),
+                $queryBuilder->expr()->eq('sys_language_uid', $queryBuilder->createNamedParameter($languageId, ParameterType::INTEGER))
             )
             ->executeQuery();
         return $result;
@@ -521,9 +527,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             if ($this->io->isVerbose()) {
                 $this->io->info("Running on $tableName.$fieldName");
             }
-            $this->table = $tableName;
-            $this->field = $fieldName;
-            $this->consolidateExternalUrls();
+            $this->consolidateExternalUrls($tableName, $fieldName);
         }
     }
 
