@@ -34,7 +34,7 @@ typo3 housekeeper:move <source> <target>
 | `<source>`       | (Combined) identifier of the source folder/file | Yes      |
 | `<target>`       | (Combined) identifier of the target folder/file | Yes      |
 
-The combined identifier begins with the storage ID, see examples.
+> The combined identifier begins with the storage ID, see examples.
 ```<storageId>:<path>```. The default is ```1```.
 
 #### Examples
@@ -86,6 +86,9 @@ typo3 housekeeper:cleanup-files <identifier> [options]
 | `--dry-run`         | -     | Only pretend deletion                     | false         |
 | `--update-refindex` | -     | Automatically updates the reference index | false         |
 
+> Files that failed to be deleted will be written to a log file:
+`var/log/housekeeper:cleanup-files_failed_DATE.log`.
+
 #### Examples
 
 ```
@@ -110,6 +113,9 @@ typo3 housekeeper:cleanup-missing [options]
 | `--dry-run`         | -     | Only pretend deletion                     | false         |
 | `--update-refindex` | -     | Automatically updates the reference index | false         |
 
+> Files that failed to be deleted will be written to a log file:
+`var/log/housekeeper:cleanup-missing_failed_DATE.log`.
+
 ### Consolidate External URLs Command
 
 This command searches for external URLs in the database and converts them to
@@ -129,17 +135,21 @@ typo3 housekeeper:consolidate-external-urls <site> [options]
 
 #### Options
 
-| Option      | Short | Description                                      | Default   |
-|-------------|-------|--------------------------------------------------|-----------|
-| `--table`   | `-t`  | The database table to search in                  | -         |
-| `--field`   | `-f`  | The database field to search in                  | -         |
+| Option      | Short | Description                                   | Default   |
+|-------------|-------|-----------------------------------------------|-----------|
+| `--table`   | `-t`  | The database table to search in               | -         |
+| `--field`   | `-f`  | The database field to search in               | -         |
 | `--domain`  | `-d`  | The domain to match (e.g., www.your-website.com) | -         |
-| `--path`    | `-p`  | The path to match                                | fileadmin |
-| `--all`     | `-a`  | Run on all fields defined in $GLOBALS['TCA']     | false     |
-| `--log`     | `-l`  | Write output to log file                         | false     |
-| `--dry-run` | -     | Only simulate changes without saving them        | false     |
+| `--path`    | `-p`  | The path to match                             | fileadmin |
+| `--all`     | `-a`  | Run on all fields defined in $GLOBALS['TCA']  | false     |
+| `--log`     | `-l`  | Write output to log file                      | false     |
+| `--dry-run` | -     | Only simulate changes without saving them     | false     |
 
-The log file is written to `var/log/housekeeper:consolidate-external-urls_DATE.log`.
+> The `--all` option will use tables and fields found by searching the `$GLOBALS['TCA']` array
+for all fields with a `type` of `link` or a `softref` containing `typolink`.
+
+> The log file option `--log`, causes the output to be written to
+`var/log/housekeeper:consolidate-external-urls_DATE.log`.
 
 #### Examples
 
@@ -152,3 +162,5 @@ typo3 housekeeper:consolidate-external-urls sitename -a -d www.your-website.com
 
 # Perform a dry run without making any changes
 typo3 housekeeper:consolidate-external-urls sitename -t tt_content -f bodytext -d www.your-website.com --dry-run
+```
+
