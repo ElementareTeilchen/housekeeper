@@ -47,12 +47,13 @@ class FalMoveCommand extends AbstractCommand
     public function configure()
     {
         $this->setHelp('
-Move or rename a file. Specify the source and the target. Works similar to bash mv command.
+Move or rename a file. Specify the source and the target with optional storageId, default is 1. Works similar to bash mv command. Move between different storages only works with files, not folders.
 Examples:
 typo3 housekeeper:move <source> <target>
-typo3 housekeeper:move fileadmin/old/path/ fileadmin/new-path/
-typo3 housekeeper:move fileadmin/old.pdf fileadmin/new-path/
-typo3 housekeeper:move fileadmin/old.pdf fileadmin/new-path/new.pdf
+typo3 housekeeper:move old/path other-path/
+typo3 housekeeper:move old.pdf new.pdf
+typo3 housekeeper:move 1:old/path 1:new-path
+typo3 housekeeper:move 1:old.pdf 2:other-path/new.pdf
 ');
         $this->addCommonOptions();
         $this->addArgument('source', InputArgument::REQUIRED, 'Combined identifier of the source folder/file');
