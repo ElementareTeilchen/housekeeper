@@ -159,8 +159,8 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
         $result = $this->findAllWithExternalUrls($tableName, $fieldName);
         $totalRecords = $result->rowCount();
 
-        if ($io->isVerbose()) {
-            $io->writeln("<comment>Found $totalRecords records of field $tableName.$fieldName</comment>");
+        if ($this->io->isVerbose()) {
+            $this->io->writeln("<comment>Found $totalRecords records of field $tableName.$fieldName</comment>");
         }
 
         $regexp = $this->createRegexp();
