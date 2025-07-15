@@ -100,6 +100,7 @@ typo3 housekeeper:cleanup-files .jpg
 
 Cleanup missing files. Files marked as missing are touched and marked as not
 missing before deletion.
+For good results, make sure you have the Scheduler Task "File Abstraction Layer: Update storage index (scheduler)" actively running.
 
 ```
 typo3 housekeeper:cleanup-missing [options]
