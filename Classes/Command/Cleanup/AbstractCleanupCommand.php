@@ -52,11 +52,12 @@ class AbstractCleanupCommand extends AbstractCommand
      * @param FileOperationService $fileOperationService Service for file operations
      */
     public function __construct(
-        ResourceFactory $resourceFactory,
-        StorageRepository $storageRepository,
-        protected readonly ExtendedFileUtility $extendedFileUtility,
+        ResourceFactory                         $resourceFactory,
+        StorageRepository                       $storageRepository,
+        protected readonly ExtendedFileUtility  $extendedFileUtility,
         protected readonly FileOperationService $fileOperationService
-    ) {
+    )
+    {
         parent::__construct($resourceFactory, $storageRepository);
     }
 
@@ -93,8 +94,15 @@ class AbstractCleanupCommand extends AbstractCommand
         $this->fileOperationService->setIo($this->io);
 
         $this->storageId = (int)($input->getOption('storageId') ?? 1);
-        $this->storagePath = $this->getFullStoragePath();
-        $this->io->info('Using storage path: ' . $this->storagePath);
+
+        $storage = $this->storageRepository->getStorageObject($this->storageId);
+        if (!$storage->isOnline()) {
+            $this->io->error('Storage ' . $this->storageId . ' is not online');
+            exit(1);
+        } else {
+            $this->storagePath = $this->getFullStoragePath();
+            $this->io->info('Using storage path: ' . $this->storagePath);
+        }
 
         // Update the reference index
         $this->updateReferenceIndex($input);
