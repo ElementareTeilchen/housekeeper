@@ -7,10 +7,13 @@ namespace Elementareteilchen\Housekeeper\Command\Cleanup;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Resource\Search\FileSearchDemand;
 use TYPO3\CMS\Core\Resource\Search\Result\FileSearchResultInterface;
+use TYPO3\CMS\Core\Resource\Security\FileNameValidator;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Command for cleaning up files by a specified identifier pattern
@@ -22,6 +25,12 @@ use TYPO3\CMS\Core\Resource\Search\Result\FileSearchResultInterface;
  */
 class FilesCleanupCommand extends AbstractCleanupCommand
 {
+
+    /**
+     * When deleting files, remove new empty parent folders
+     */
+    protected string|bool $removeEmptyParentFolder;
+
     /**
      * Configure the command
      */
@@ -39,6 +48,7 @@ their path is written to a log file in var/log for further inspection.
 ');
         $this->addCleanupOptions();
         $this->addArgument('identifier', InputArgument::REQUIRED, 'Identifier of the files to delete. E.g. ".jpg.webp"');
+        $this->addOption('removeEmptyParentFolder', 'e', InputOption::VALUE_OPTIONAL, 'When deleting files, remove new empty parent folders. Pass recursive as value to remove all empty parent folders', false);
     }
 
     /**
@@ -57,6 +67,13 @@ their path is written to a log file in var/log for further inspection.
         }
 
         $identifier = $input->getArgument('identifier');
+
+        $this->removeEmptyParentFolder =  match ($input->getOption('removeEmptyParentFolder')) {
+            null => true, // null is passed if the option is set but has no value
+            'recursive' => 'recursive',
+            default => false,
+        };
+
 
         $fileSearchResults = $this->search($identifier);
 
@@ -104,10 +121,6 @@ their path is written to a log file in var/log for further inspection.
 
             $this->io->writeln('<info>Processing file: ' . $filePath . '</info>');
 
-            if ($this->dryRun) {
-                continue;
-            }
-
             // the file should exist at this point
             if (!file_exists($filePath)) {
                 $this->io->writeln('<warning>Can not delete file, as it does not exist</warning>');
@@ -116,19 +129,49 @@ their path is written to a log file in var/log for further inspection.
             }
 
             // now the deletion should go through, except for files that still have references
-            $this->deleteFile($identifier);
+            if (!$this->dryRun) {
+                $this->deleteFile($identifier);
+            }
 
-            if (file_exists($filePath)) { // @phpstan-ignore-line - file_exists may not be true as we try to delete it inbetween
+            if (file_exists($filePath) && !$this->dryRun) { // @phpstan-ignore-line - file_exists may not be true as we try to delete it inbetween
                 $failedCount++;
                 $this->logFailed($logFileFailed, $filePath);
             } else {
                 $deletedCount++;
+
+                if ($this->removeEmptyParentFolder) {
+                    $this->removeEmptyFolder($directory, $this->removeEmptyParentFolder === 'recursive');
+                }
             }
         }
 
         $this->io->writeln('<info>Deleted: ' . $deletedCount . ' Failed: ' . $failedCount . '</info>');
 
         return [$deletedCount, $failedCount];
+    }
+
+    /**
+     * Recursively remove empty parent folders
+     *
+     * @param string $path Current path to check
+     * @param bool $recursive Recursively remove empty parent folders
+     * @return bool Whether the folder is empty
+     */
+    protected function removeEmptyFolder($dir, $recursive = false): void
+    {
+        while (is_dir($dir) && count(scandir($dir)) === 2) {
+            if (!$this->dryRun) {
+                if (rmdir($dir)) {
+                    if ($this->io->isDebug()) {
+                        $this->io->writeln('<comment>Removed empty folder: ' . $dir . '</comment>');
+                    }
+                } else {
+                    $this->io->writeln('<warning>Failed to remove empty folder: ' . $dir . '</warning>');
+                }
+            }
+            if (!$recursive) break;
+            $dir = dirname($dir);
+        }
     }
 
     /**

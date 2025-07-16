@@ -95,13 +95,18 @@ class AbstractCleanupCommand extends AbstractCommand
 
         $this->storageId = (int)($input->getOption('storageId') ?? 1);
 
-        $storage = $this->storageRepository->getStorageObject($this->storageId);
-        if (!$storage->isOnline()) {
-            $this->io->error('Storage ' . $this->storageId . ' is not online');
+        try {
+            $storage = $this->storageRepository->getStorageObject($this->storageId);
+            if (!$storage->isOnline()) {
+                $this->io->error('Storage ' . $this->storageId . ' is not online');
+                exit(1);
+            } else {
+                $this->storagePath = $this->getFullStoragePath();
+                $this->io->info('Using storage path: ' . $this->storagePath);
+            }
+        } catch (\Exception $e) {
+            $this->io->error('Storage ' . $this->storageId . ' not found');
             exit(1);
-        } else {
-            $this->storagePath = $this->getFullStoragePath();
-            $this->io->info('Using storage path: ' . $this->storagePath);
         }
 
         // Update the reference index
@@ -182,64 +187,6 @@ class AbstractCleanupCommand extends AbstractCommand
     }
 
     /**
-     * Create a file that doesn't exist
-     *
-     * Creates necessary directory structure and touches the file so that it can
-     * be properly deleted by the file system if needed.
-     *
-     * @param string $file Path to the file
-     * @param string $directory Directory containing the file
-     */
-    protected function touchFile(string $file, string $directory): void
-    {
-        if (!file_exists($file)) {
-            if (!is_dir($directory)) {
-                if ($this->io->isDebug()) {
-                    $this->io->writeln('<comment>Creating directory: ' . $directory . '</comment>');
-                }
-                mkdir($directory, 0775, true);
-            }
-            if (!is_file($file)) {
-                if ($this->io->isDebug()) {
-                    $this->io->writeln('<comment>Touching file so it can be deleted via system command</comment>');
-                }
-                touch($file);
-                chmod($file, 0666);
-            }
-        }
-    }
-
-    /**
-     * Cleanup empty folders in the storage path
-     *
-     * This is done after all files have been processed
-     * to ensure that no empty folders are left behind
-     * in the storage path
-     *
-     * @return void
-     */
-    protected function cleanupEmptyFolders()
-    {
-        $this->removeEmptySubFolders($this->storagePath, $this->storagePath);
-    }
-
-    /**
-     * Recursively remove empty subfolders
-     *
-     * @param string $path Current path to check
-     * @param string $basePath Base path that should not be removed
-     * @return bool Whether the folder is empty
-     */
-    protected function removeEmptySubFolders($path, $basePath)
-    {
-        $empty = true;
-        foreach (glob($path . DIRECTORY_SEPARATOR . '*') as $file) {
-            $empty &= is_dir($file) && $this->removeEmptySubFolders($file, $basePath);
-        }
-        return $empty && $path !== $basePath && fileowner($path) === 0 && rmdir($path);
-    }
-
-    /**
      * Log a file that failed to be deleted
      *
      * @param string $logFileFailed Path to the log file
@@ -271,10 +218,7 @@ class AbstractCleanupCommand extends AbstractCommand
      */
     public function endExecution(): void
     {
-        if (!$this->dryRun) {
-            $this->io->success('Deleting empty folders.');
-            $this->cleanupEmptyFolders();
-        }
+        $this->io->success('Done.');
     }
 
     /**
@@ -285,6 +229,7 @@ class AbstractCleanupCommand extends AbstractCommand
     {
         $fileNameValidator = GeneralUtility::makeInstance(FileNameValidator::class);
         $skip = !$fileNameValidator->isValid(basename((string)$identifier));
+        $skip = $skip || strpos($identifier, '_recycler_') > -1;
         if ($skip) {
             $this->io->writeln('<warning>Skipping: We are not allowed to delete file: ' . $identifier . '</warning>');
         }

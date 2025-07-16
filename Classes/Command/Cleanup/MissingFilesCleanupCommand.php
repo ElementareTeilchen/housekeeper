@@ -29,6 +29,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class MissingFilesCleanupCommand extends AbstractCleanupCommand
 {
+    private array $createdDirectories = [];
+
     /**
      * Constructor
      *
@@ -153,6 +155,7 @@ their path is written to a log file in var/log for further inspection.
             } else {
                 $deletedCount++;
             }
+            $this->removeCreatedFolders();
         }
 
         $this->io->writeln('<info>Deleted: ' . $deletedCount . ' Failed: ' . $failedCount . '</info>');
@@ -186,6 +189,82 @@ their path is written to a log file in var/log for further inspection.
             $this->io->writeln('<warning>Failed to create dummy file: ' . $file . '</warning>');
         }
         return $file_exists;
+    }
+
+    /**
+     * Create a file that doesn't exist
+     *
+     * Creates necessary directory structure and touches the file so that it can
+     * be properly deleted by the file system if needed.
+     *
+     * @param string $file Path to the file
+     * @param string $directory Directory containing the file
+     */
+    protected function touchFile(string $file, string $directory): void
+    {
+        if (!file_exists($file)) {
+            if (!is_dir($directory)) {
+                if ($this->io->isDebug()) {
+                    $this->io->writeln('<comment>Creating directory: ' . $directory . '</comment>');
+                }
+                // Manually create directory structure recursively
+                $createdDirs = $this->createDirectoryRecursively($directory);
+            }
+            if (!is_file($file)) {
+                if ($this->io->isDebug()) {
+                    $this->io->writeln('<comment>Touching file so it can be deleted via system command</comment>');
+                }
+                touch($file);
+                chmod($file, 0666);
+            }
+        }
+    }
+
+    /**
+     * Creates directory structure recursively and collects created directories
+     *
+     * @param string $directory Full directory path to create
+     */
+    protected function createDirectoryRecursively(string $directory): void
+    {
+        $this->createdDirectories = [];
+        $parts = explode('/', $directory);
+        $path = '';
+
+        // Skip the first empty element when path starts with '/'
+        $startIndex = $parts[0] === '' ? 1 : 0;
+
+        for ($i = $startIndex; $i < count($parts); $i++) {
+            $path = $path . ($path && $startIndex === 1 ? '/' : '') . $parts[$i];
+
+            $fileNotExists = !file_exists($path);
+            if ($fileNotExists && !mkdir($path, 0775)) {
+                throw new \RuntimeException('Directory "' . $path . '" could not be created');
+            }
+
+            // if it now exists, add it to the list
+            if ($fileNotExists && file_exists($path)) {
+                $this->createdDirectories[] = $path;
+            }
+
+            if ($startIndex === 1 && $i === $startIndex) {
+                // For absolute paths, add the leading slash back for subsequent iterations
+                $path = '/' . $path;
+            }
+        }
+    }
+
+    private function removeCreatedFolders(): void
+    {
+        foreach (array_reverse($this->createdDirectories) as $directory) {
+            if (rmdir($directory)) {
+                if ($this->io->isDebug()) {
+                    $this->io->writeln('<comment>Removed created directory: ' . $directory . '</comment>');
+                }
+            } else {
+                $this->io->writeln('<warning>Failed to remove created directory: ' . $directory . '</warning>');
+            }
+        }
     }
 
     /**
