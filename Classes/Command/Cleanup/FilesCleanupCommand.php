@@ -155,7 +155,7 @@ their path is written to a log file in var/log for further inspection.
      *
      * @param string $path Current path to check
      * @param bool $recursive Recursively remove empty parent folders
-     * @return bool Whether the folder is empty
+     * @return void
      */
     protected function removeEmptyFolder($dir, $recursive = false): void
     {

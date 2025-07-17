@@ -155,7 +155,7 @@ their path is written to a log file in var/log for further inspection.
             } else {
                 $deletedCount++;
             }
-            $this->removeCreatedFolders();
+            $this->removeCreatedDirectories();
         }
 
         $this->io->writeln('<info>Deleted: ' . $deletedCount . ' Failed: ' . $failedCount . '</info>');
@@ -208,15 +208,13 @@ their path is written to a log file in var/log for further inspection.
                     $this->io->writeln('<comment>Creating directory: ' . $directory . '</comment>');
                 }
                 // Manually create directory structure recursively
-                $createdDirs = $this->createDirectoryRecursively($directory);
+                $this->createDirectoryRecursively($directory);
             }
-            if (!is_file($file)) {
-                if ($this->io->isDebug()) {
-                    $this->io->writeln('<comment>Touching file so it can be deleted via system command</comment>');
-                }
-                touch($file);
-                chmod($file, 0666);
+            if ($this->io->isDebug()) {
+                $this->io->writeln('<comment>Touching file so it can be deleted via system command</comment>');
             }
+            touch($file);
+            chmod($file, 0666);
         }
     }
 
@@ -227,7 +225,6 @@ their path is written to a log file in var/log for further inspection.
      */
     protected function createDirectoryRecursively(string $directory): void
     {
-        $this->createdDirectories = [];
         $parts = explode('/', $directory);
         $path = '';
 
@@ -254,7 +251,11 @@ their path is written to a log file in var/log for further inspection.
         }
     }
 
-    private function removeCreatedFolders(): void
+    /**
+     * Removes all previously created directories
+     * @return void
+     */
+    private function removeCreatedDirectories(): void
     {
         foreach (array_reverse($this->createdDirectories) as $directory) {
             if (rmdir($directory)) {
@@ -265,6 +266,8 @@ their path is written to a log file in var/log for further inspection.
                 $this->io->writeln('<warning>Failed to remove created directory: ' . $directory . '</warning>');
             }
         }
+        // clear the list
+        $this->createdDirectories = [];
     }
 
     /**

@@ -87,8 +87,6 @@ class AbstractCleanupCommand extends AbstractCommand
      */
     protected function prepareExecution(InputInterface $input, OutputInterface $output): void
     {
-        Bootstrap::initializeBackendAuthentication();
-
         // Initialize common command properties
         $this->initializeCommand($input, $output);
         $this->fileOperationService->setIo($this->io);
@@ -229,7 +227,7 @@ class AbstractCleanupCommand extends AbstractCommand
     {
         $fileNameValidator = GeneralUtility::makeInstance(FileNameValidator::class);
         $skip = !$fileNameValidator->isValid(basename((string)$identifier));
-        $skip = $skip || strpos($identifier, '_recycler_') > -1;
+        // todo: do we need to skip _recycler_ files? $skip = $skip || strpos($identifier, '_recycler_') > -1;
         if ($skip) {
             $this->io->writeln('<warning>Skipping: We are not allowed to delete file: ' . $identifier . '</warning>');
         }
