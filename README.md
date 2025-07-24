@@ -62,6 +62,12 @@ These commands find either missing files or files whose identifier contain a spe
 delete them. Files which are still in use are omitted and shown in the output.
 This will also cleanup leftover references (like in sys_file_metadata).
 
+### Limitations
+
+Be aware that the cleanup commands may move files to the recycle bins (`_recycler_` directory). You may want to setup the
+[appropriate TYPO3 scheduler task.](https://docs.typo3.org/c/typo3/cms-scheduler/main/en-us/Installation/BaseTasks/Index.html)
+to delete those files automatically.
+
 ### Files Cleanup Command
 
 Cleanup files via a given identifier. All files matching the given string are deleted via the
