@@ -34,3 +34,10 @@ services:
         command: 'housekeeper:consolidate-external-urls'
         description: 'Find external urls in RTEs and replace them with the internal link.'
         schedulable: true
+
+  Elementareteilchen\Housekeeper\Command\Cleanup\SysLogCleanupCommand:
+    tags:
+      - name: 'console.command'
+        command: 'housekeeper:cleanup-syslog'
+        description: 'Cleanup TYPO3 sys_log table from outdated entries.'
+        schedulable: true
