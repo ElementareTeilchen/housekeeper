@@ -133,7 +133,8 @@ typo3 housekeeper:cleanup-syslog [options]
 
 | Option              | Short | Description                               | Default       |
 |---------------------|-------|-------------------------------------------|---------------|
-| `--days`            | `-d`  | Delete rows older than this many days    | 360           |
+| `--maxDays`            | `-D`  | Delete rows older than this many days    | 360           |
+| `--minDays`         | `-d`  | Keep rows younger than this many days | 10            |
 | `--dry-run`         | -     | Only pretend deletion                     | false         |
 
 ### Consolidate External URLs Command
