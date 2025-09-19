@@ -51,5 +51,8 @@
 			"typo3/cms-composer-installers": true,
 			"typo3/class-alias-loader": true
 		}
+	},
+	"scripts": {
+		"test": "./Build/Scripts/runTests.sh -s functional -d mariadb -p 8.3"
 	}
 }
