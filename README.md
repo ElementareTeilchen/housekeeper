@@ -124,7 +124,12 @@ typo3 housekeeper:cleanup-missing [options]
 `var/log/housekeeper:cleanup-missing_failed_DATE.log`.
 
 ### SysLog Cleanup Command
-Cleanup old sys_log entries. You can define the age of the entries to be deleted.
+This command deletes entries from sys_log if they are older than --retentionPeriod and match one of the following criteria:
+  - details LIKE "%has cleared the cache%"
+  - details LIKE "[scheduler%"
+  - details LIKE "User %s logged in from%"
+  - error > 0
+  - tstamp older than --cutoffPeriod (default 360)
 
 ```
 typo3 housekeeper:cleanup-syslog [options]
@@ -133,8 +138,8 @@ typo3 housekeeper:cleanup-syslog [options]
 
 | Option              | Short | Description                               | Default       |
 |---------------------|-------|-------------------------------------------|---------------|
-| `--maxDays`            | `-D`  | Delete rows older than this many days    | 360           |
-| `--minDays`         | `-d`  | Keep rows younger than this many days | 10            |
+| `--cutoffPeriod`    | `-c`  | Delete rows older than this (in days)    | 360           |
+| `--retentionPeriod` | `-r`  | Keep rows younger than this (in days)    | 10            |
 | `--dry-run`         | -     | Only pretend deletion                     | false         |
 
 ### Consolidate External URLs Command
