@@ -123,6 +123,25 @@ typo3 housekeeper:cleanup-missing [options]
 > Files that failed to be deleted will be written to a log file:
 `var/log/housekeeper:cleanup-missing_failed_DATE.log`.
 
+### SysLog Cleanup Command
+This command deletes entries from sys_log if they are older than --retentionPeriod and match one of the following criteria:
+  - details LIKE "%has cleared the cache%"
+  - details LIKE "[scheduler%"
+  - details LIKE "User %s logged in from%"
+  - error > 0
+  - tstamp older than --cutoffPeriod (default 360)
+
+```
+typo3 housekeeper:cleanup-syslog [options]
+```
+#### Options
+
+| Option              | Short | Description                               | Default       |
+|---------------------|-------|-------------------------------------------|---------------|
+| `--cutoffPeriod`    | `-c`  | Delete rows older than this (in days)    | 360           |
+| `--retentionPeriod` | `-r`  | Keep rows younger than this (in days)    | 10            |
+| `--dry-run`         | -     | Only pretend deletion                     | false         |
+
 ### Consolidate External URLs Command
 
 This command searches for external URLs in the database and converts them to
