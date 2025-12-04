@@ -10,7 +10,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use TYPO3\CMS\Backend\Command\ProgressListener\ReferenceIndexProgressListener;
-use TYPO3\CMS\Core\Core\Bootstrap;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Database\ReferenceIndex;
 use TYPO3\CMS\Core\Resource\Folder;
@@ -40,8 +39,16 @@ class AbstractCleanupCommand extends AbstractCommand
 
     /**
      * Path to the storage being processed
+     * Only populated for writable storages that support local file operations
      */
-    protected string $storagePath;
+    protected string $storagePath = '';
+
+    /**
+     * Indicates whether the storage is writable
+     * Non-writable storages (read-only) cannot have files written to them,
+     * so touchFile, mkdir, and unlink operations must be skipped
+     */
+    protected bool $isWritableStorage = true;
 
     /**
      * Constructor
@@ -98,6 +105,14 @@ class AbstractCleanupCommand extends AbstractCommand
             if (!$storage->isOnline()) {
                 $this->io->error('Storage ' . $this->storageId . ' is not online');
                 exit(1);
+            }
+
+            // Check if storage is writable
+            // Non-writable storages cannot have dummy files created for deletion
+            $this->isWritableStorage = $storage->isWritable();
+
+            if (!$this->isWritableStorage) {
+                $this->io->info('Storage ' . $this->storageId . ' is not writable. File operations will be skipped.');
             } else {
                 $this->storagePath = $this->getFullStoragePath();
                 $this->io->info('Using storage path: ' . $this->storagePath);
@@ -120,7 +135,7 @@ class AbstractCleanupCommand extends AbstractCommand
     /**
      * Delete a file using the file operation service
      *
-     * @param string $file Identifier of the file to delete
+     * @param string $file Uid or Identifier of the file to delete
      * @return bool Success of the deletion operation
      */
     protected function deleteFile($file): bool

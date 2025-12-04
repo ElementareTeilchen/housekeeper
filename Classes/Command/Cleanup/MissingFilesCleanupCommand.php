@@ -136,17 +136,21 @@ their path is written to a log file in var/log for further inspection.
                 continue;
             }
 
-            // the file should exist at this point
-            if (!file_exists($filePath)) {
+            // For writable storages, the file should exist at this point
+            if ($this->isWritableStorage && !file_exists($filePath)) {
                 $this->io->writeln('<warning>Can not delete file, as it does not exist</warning>');
                 $failedCount++;
                 continue;
             }
 
             // now the deletion should go through, except for files that still have references
-            $this->deleteFile($identifier);
+            $deletionSuccess = $this->deleteFile((string)$record['uid']);
 
-            if (file_exists($filePath)) { // @phpstan-ignore-line - file_exists may not be true as we try to delete it inbetween
+            // For writable storages, also check if file still exists after deletion attempt
+            // For non-writable storages, rely only on the API response
+            $deletionFailed = !$deletionSuccess || ($this->isWritableStorage && file_exists($filePath)); // @phpstan-ignore-line - file_exists may not be true as we try to delete it inbetween
+
+            if ($deletionFailed) {
                 $failedCount++;
                 $this->logFailed($logFileFailed, $filePath);
 
@@ -167,9 +171,12 @@ their path is written to a log file in var/log for further inspection.
      * Hook method called before a file is deleted
      * Prepares missing files by touching them and marking them as not missing
      *
+     * For non-writable storages, touchFile is skipped as they don't support
+     * local file operations. The files can be deleted directly via the TYPO3 API.
+     *
      * @param array $fileData File data containing identifier and uid
-     * @param string $file File path
-     * @param string $directory Directory path
+     * @param string $file File path (empty for non-writable storages)
+     * @param string $directory Directory path (empty for non-writable storages)
      * @return bool Whether the file was successfully prepared
      */
     protected function beforeFileDelete(array $record, string $file, string $directory): bool
@@ -181,7 +188,13 @@ their path is written to a log file in var/log for further inspection.
             return false;
         }
 
-        // then create a dummy
+        // For non-writable storages, skip touchFile as they don't support local file operations
+        if (!$this->isWritableStorage) {
+            $this->io->writeln('<info>Non-writable storage detected - skipping local file creation for: ' . $record['identifier'] . '</info>', OutputInterface::VERBOSITY_VERBOSE);
+            return true; // Non-writable storages can delete files directly via API
+        }
+
+        // For writable storages, create a dummy file so it can be deleted via the file system
         $this->touchFile($file, $directory);
 
         $file_exists = file_exists($file);
@@ -274,21 +287,26 @@ their path is written to a log file in var/log for further inspection.
      * Hook method called after a file deletion has failed
      * Cleans up the temporary file and marks it as missing again
      *
+     * For non-writable storages, skip the unlink operation as no local dummy file was created.
+     *
      * @param array $fileData File data containing identifier and uid
-     * @param string $file File path
+     * @param string $file File path (empty for non-writable storages)
      */
     protected function afterFailedDelete(array $fileData, string $file): void
     {
         // We could not delete the file, so we mark it as missing again
         $success = $this->setFileMissingStatus($fileData['uid'], true);
         if (!$success) {
-            $this->io->writeln('<warning>Failed to mark file with identifier ' . $record['identifier'] . ' (uid=' . $record['uid'] . ')  as missing</warning>');
+            $this->io->writeln('<warning>Failed to mark file with identifier ' . $fileData['identifier'] . ' (uid=' . $fileData['uid'] . ')  as missing</warning>');
         }
-        // and delete the touched file
-        unlink($file);
 
-        if (file_exists($file)) {
-            $this->io->writeln('<warning>Failed to delete dummy file: ' . $file . '</warning>');
+        // For writable storages, delete the touched dummy file
+        if ($this->isWritableStorage) {
+            unlink($file);
+
+            if (file_exists($file)) {
+                $this->io->writeln('<warning>Failed to delete dummy file: ' . $file . '</warning>');
+            }
         }
     }
 

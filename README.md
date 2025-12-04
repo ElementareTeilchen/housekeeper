@@ -68,6 +68,15 @@ Be aware that the cleanup commands may move files to the recycle bins (`_recycle
 [appropriate TYPO3 scheduler task.](https://docs.typo3.org/c/typo3/cms-scheduler/main/en-us/Installation/BaseTasks/Index.html)
 to delete those files automatically.
 
+### Writable Storage Support
+
+All cleanup commands automatically detect **writable vs. non-writable storages** and adapt their behavior:
+
+- **Writable storages**: Creates dummy files before deletion (standard behavior)
+- **Non-writable storages**: Skips local file operations and deletes directly via TYPO3 FAL API
+
+The storage type is determined by checking `isWritable()`.
+
 ### Files Cleanup Command
 
 Cleanup files via a given identifier. All files matching the given string are deleted via the

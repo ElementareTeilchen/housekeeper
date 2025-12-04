@@ -121,25 +121,30 @@ their path is written to a log file in var/log for further inspection.
 
             $this->io->writeln('<info>Processing file: ' . $filePath . '</info>');
 
-            // the file should exist at this point
-            if (!file_exists($filePath)) {
+            // For writable storages, the file should exist at this point
+            if ($this->isWritableStorage && !file_exists($filePath)) {
                 $this->io->writeln('<warning>Can not delete file, as it does not exist</warning>');
                 $failedCount++;
                 continue;
             }
 
             // now the deletion should go through, except for files that still have references
+            $deletionSuccess = true;
             if (!$this->dryRun) {
-                $this->deleteFile($identifier);
+                $deletionSuccess = $this->deleteFile((string)$fileResult->getUid());
             }
 
-            if (file_exists($filePath) && !$this->dryRun) { // @phpstan-ignore-line - file_exists may not be true as we try to delete it inbetween
+            // For writable storages, also check if file still exists after deletion attempt
+            // For non-writable storages, rely only on the API response
+            $deletionFailed = !$deletionSuccess || ($this->isWritableStorage && file_exists($filePath)); // @phpstan-ignore-line - file_exists may not be true as we try to delete it inbetween
+
+            if ($deletionFailed) {
                 $failedCount++;
                 $this->logFailed($logFileFailed, $filePath);
             } else {
                 $deletedCount++;
 
-                if ($this->removeEmptyParentFolder) {
+                if ($this->removeEmptyParentFolder && $this->isWritableStorage) {
                     $this->removeEmptyFolder($directory, $this->removeEmptyParentFolder === 'recursive');
                 }
             }
@@ -153,12 +158,19 @@ their path is written to a log file in var/log for further inspection.
     /**
      * Recursively remove empty parent folders
      *
+     * Only works for writable storages where local file operations are supported
+     *
      * @param string $path Current path to check
      * @param bool $recursive Recursively remove empty parent folders
      * @return void
      */
     protected function removeEmptyFolder($dir, $recursive = false): void
     {
+        // Only attempt to remove folders for writable storages
+        if (!$this->isWritableStorage) {
+            return;
+        }
+
         while (is_dir($dir) && count(scandir($dir)) === 2) {
             if (!$this->dryRun) {
                 if (rmdir($dir)) {

@@ -38,7 +38,7 @@ class FileOperationService
     /**
      * Delete a file via the TYPO3 API
      *
-     * @param string $identifier Path or identifier of the file to delete
+     * @param string $identifier Uid or Path or identifier of the file to delete
      * @param int $storageId ID of the storage containing the file
      * @return bool Success status of the deletion
      */
@@ -49,7 +49,7 @@ class FileOperationService
         }
 
         if ($this->io->isDebug()) {
-            $this->io->writeln('Executing delete command with data path: ' . $identifier);
+            $this->io->writeln('Executing delete command with data uid: ' . $identifier);
         }
 
         $result = $this->executeCommand([
