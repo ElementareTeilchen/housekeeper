@@ -208,6 +208,13 @@ class AbstractCleanupCommand extends AbstractCommand
     public function logFailed(string $logFileFailed, string $file): void
     {
         $this->io->writeln('<error>Failed to delete file, it might still have references</error>');
+
+        // Ensure log directory exists
+        $logDirectory = dirname($logFileFailed);
+        if (!is_dir($logDirectory) && !mkdir($logDirectory, 0775, true) && !is_dir($logDirectory)) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $logDirectory));
+        }
+
         file_put_contents($logFileFailed, $file . PHP_EOL, FILE_APPEND | LOCK_EX);
     }
 
