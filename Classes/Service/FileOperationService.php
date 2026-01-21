@@ -153,8 +153,11 @@ class FileOperationService
     private function executeCommand(array $fileCommand): array
     {
         try {
+            // TODO: Refactor once v12 support is dropped
             if (class_exists(\TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior::class)) {
                 $this->extendedFileUtility->setExistingFilesConflictMode(\TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior::CANCEL);
+            } elseif (class_exists(\TYPO3\CMS\Core\Resource\DuplicationBehavior::class)) {
+                $this->extendedFileUtility->setExistingFilesConflictMode(\TYPO3\CMS\Core\Resource\DuplicationBehavior::CANCEL);
             }
             $this->extendedFileUtility->start($fileCommand);
             return $this->extendedFileUtility->processData();
