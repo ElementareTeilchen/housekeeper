@@ -63,15 +63,42 @@ abstract class AbstractCommand extends Command
      */
     protected function initializeCommand(InputInterface $input, OutputInterface $output): void
     {
-        // Initialize Backend User for the commands to function properly
-        if (isset($GLOBALS['BE_USER'])) {
-            $GLOBALS['BE_USER']->initializeUserSessionManager();
-        }
+        $this->initializeUserSession();
 
         $this->io = new SymfonyStyle($input, $output);
         $this->io->title($this->getDescription());
 
         $this->dryRun = (bool)$input->getOption('dry-run');
+    }
+
+    /**
+     * Initialize backend user session correctly for the commands to function properly.
+     *
+     * We need a 'proper' session in CLI context, since ExtendedFileUtility attempts to write flash messages into the
+     * session storage.
+     * We also must not overwrite an already existing session, if the command is executed from the BE scheduler module,
+     * otherwise the current BE user will be logged out.
+     */
+    protected function initializeUserSession(): void
+    {
+
+        if (!isset($GLOBALS['BE_USER'])) {
+            throw new \RuntimeException('Existing backend user authentication expected', 1768989261);
+        }
+
+        $userSession = null;
+        try {
+            $userSession = $GLOBALS['BE_USER']->getSession();
+        } catch (\TypeError $e) {
+            // Workaround for core bug:
+            // AbstractUserAuthentication::userSession might be null, but AbstractUserAuthentication::getSession() is
+            // expected to return a UserSession type, instead of a ?UserSession. So the function call fails, if no user
+            // session exists.
+        }
+
+        if ($userSession === null) {
+            $GLOBALS['BE_USER']->initializeUserSessionManager();
+        }
     }
 
     /**

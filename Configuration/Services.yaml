@@ -19,7 +19,7 @@ services:
       - name: 'console.command'
         command: 'housekeeper:cleanup-missing'
         description: 'Cleanup missing files.'
-        schedulable: false
+        schedulable: true
 
   Elementareteilchen\Housekeeper\Command\Cleanup\FilesCleanupCommand:
     tags:
