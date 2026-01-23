@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elementareteilchen\Housekeeper\Tests\Functional\Command;
 
+use TYPO3\CMS\Core\Resource\ResourceStorage;
 use TYPO3\CMS\Core\Resource\StorageRepository;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -12,39 +13,77 @@ abstract class AbstractTestCase extends FunctionalTestCase
 {
     protected $logFile = __DIR__ . '/../../../.Build/var/log/last_command_output.txt';
 
-    public const STORAGE_IDS = [1, 2];
-    protected $main_storage = 'fileadmin';
-    protected $other_storage = 'otherstorage';
-
     /**
-     * Set up the test case
+     * Create a fresh storage record.
+     *
+     * When working with the FAL, each test in itself should not rely on existing files or auto-generated file storages!
+     * See TYPO3 documentation for the behavior:
+     * https://docs.typo3.org/permalink/t3coreapi:testing-writing-functional-overview
+     * Only for the first test of a test class, the instance directory will be completely purged. For each subsequent
+     * test, only the database tables will be truncated. This means all FAL storages and records get removed, but the
+     * files will still be there! So don't use the auto-generated fileadmin storage (which might not even be there)!
+     * Create your storages manually for each test! Otherwise, side effects between tests might happen!
+     *
+     * ADDITIONAL NOTE: You are responsible for not passing garbage data to this function. Fix your calls if it fails!
+     *
+     * Example call:
+     * ```
+     * $this->createStorage(
+     *     'some-name',
+     *     [
+     *         'some-folder' => [
+     *             'test-file.txt',
+     *             'test-file-2.txt',
+     *         ],
+     *         'some-folder/subfolder' => [
+     *             'test-file-3.txt',
+     *         ],
+     *         'another-folder' => [],
+     *         '' => [
+     *             'root-level-file.txt',
+     *         ],
+     *     ]
+     * );
+     * ```
+     *
+     * This will result in a new storage with base path `some-name/`, containing the following files and folders:
+     * - `some-folder/`
+     * - `some-folder/test-file.txt`
+     * - `some-folder/test-file-2.txt`
+     * - `some-folder/subfolder/`
+     * - `some-folder/subfolder/test-file-3.txt`
+     * - `another-folder/`
+     * - `root-level-file.txt`
      */
-    protected function setUp(): void
+    protected function createStorage(string $basePath, array $initialFileStructure): ResourceStorage
     {
-        parent::setUp();
-
-        // Ensure otherstorage directory exists
-        if (!is_dir($this->instancePath . '/' . $this->other_storage)) {
-            mkdir($this->instancePath . '/' . $this->other_storage, 0755, true);
-        }
-
         $storageRepository = GeneralUtility::makeInstance(StorageRepository::class);
-        $storage = $storageRepository->findByUid(2);
 
-        if ($storage === null) {
-            $storageRepository->createLocalStorage($this->other_storage, $this->other_storage . '/', 'relative');
+        mkdir("{$this->instancePath}/{$basePath}", 0755);
+        $storageUid = $storageRepository->createLocalStorage(
+            $basePath,
+            "{$basePath}/",
+            'relative'
+        );
+        $storage = $storageRepository->findByUid($storageUid);
+
+        foreach ($initialFileStructure as $folderIdentifier => $fileNames) {
+            if ($folderIdentifier === '') {
+                $folder = $storage->getRootLevelFolder(false);
+            } else {
+                $folder = $storage->createFolder($folderIdentifier);
+            }
+            foreach ($fileNames as $fileName) {
+                $storage->createFile($fileName, $folder);
+            }
         }
 
-        //        $this->importCSVDataSet(__DIR__ . '/DataSet/sys_file_storage.csv');
+        return $storage;
     }
 
-    /**
-     * Tear down the test case
-     */
-    protected function tearDown(): void
+    protected function generateUniqueIdentifier(string $input): string
     {
-        parent::tearDown();
-
+        return substr(sha1($input), 0, 7);
     }
 
     /**

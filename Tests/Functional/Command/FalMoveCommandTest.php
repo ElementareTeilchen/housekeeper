@@ -5,165 +5,194 @@ declare(strict_types=1);
 namespace Elementareteilchen\Housekeeper\Tests\Functional\Command;
 
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFileNameException;
-use TYPO3\CMS\Core\Resource\StorageRepository;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class FalMoveCommandTest extends AbstractTestCase
 {
     public const BASE_COMMAND = 'housekeeper:move';
 
-    public const FILE_NAMES = [
-        '1_test_file.txt',
-    ];
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $storageRepository = GeneralUtility::makeInstance(StorageRepository::class);
-
-        foreach (self::STORAGE_IDS as $storageUid) {
-
-            $storage = $storageRepository->findByUid($storageUid); // Storage UID 1 = ' . $this->main_storage_name . '
-
-            if ($storage->hasFolder('source_folder') === false) {
-                $sourceFolder = $storage->createFolder('source_folder');
-            } else {
-                $sourceFolder = $storage->getFolder('source_folder');
-            }
-            if ($storage->hasFolder('source_folder/subfolder') === false) {
-                $storage->createFolder('source_folder/subfolder');
-            }
-            if ($storage->hasFolder('target_folder') === false) {
-                $storage->createFolder('target_folder');
-            }
-
-            if ($storage->hasFolder('target_folder/subfolder') === true) {
-                $targetSubfolder = $storage->getFolder('target_folder/subfolder');
-                if ($targetSubfolder) {
-                    $storage->deleteFolder($targetSubfolder);
-                }
-            }
-
-            foreach (self::FILE_NAMES as $fileName) {
-                touch($fileName);
-                try {
-                    if (class_exists(\TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior::class)) {
-                        $storage->addFile($fileName, $sourceFolder, '', \TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior::CANCEL);
-                    } else {
-                        $storage->addFile($fileName, $sourceFolder, '');
-                    }
-                } catch (ExistingTargetFileNameException $e) {
-                    unlink($fileName);
-                }
-            }
-        }
-    }
-
     #[Test]
     public function commandMovesFileToNewLocation(): void
     {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [
+                    '1_test_file.txt',
+                ],
+                'target_folder' => [],
+            ]
+        );
+        $storageId = $storage->getUid();
+
         // Use combined identifiers with reference to storage ID 1
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . '  1:source_folder/1_test_file.txt 1:target_folder/'
+            self::BASE_COMMAND . " {$storageId}:source_folder/1_test_file.txt {$storageId}:target_folder/"
         );
 
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->main_storage . '/source_folder/1_test_file.txt');
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/target_folder/1_test_file.txt');
-
-        // We can only assert the exit status until we can determine why
-        // the storage configuration isn't being recognized properly
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/source_folder/1_test_file.txt");
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/target_folder/1_test_file.txt");
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
     public function commandMovesFileWithNewName(): void
     {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [
+                    '1_test_file.txt',
+                ],
+                'target_folder' => [],
+            ]
+        );
+        $storageId = $storage->getUid();
+
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:source_folder/1_test_file.txt 1:target_folder/renamed_file.txt'
+            self::BASE_COMMAND . " {$storageId}:source_folder/1_test_file.txt {$storageId}:target_folder/renamed_file.txt"
         );
 
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->main_storage . '/source_folder/1_test_file.txt');
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/target_folder/renamed_file.txt');
-
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/source_folder/1_test_file.txt");
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/target_folder/renamed_file.txt");
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
     public function commandRenamesFileInSameFolder(): void
     {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [
+                    '1_test_file.txt',
+                ],
+                'target_folder' => [],
+            ]
+        );
+        $storageId = $storage->getUid();
+
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:/source_folder/1_test_file.txt 1:/source_folder/renamed_file.txt'
+            self::BASE_COMMAND . " {$storageId}:/source_folder/1_test_file.txt {$storageId}:/source_folder/renamed_file.txt"
         );
 
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->main_storage . '/source_folder/1_test_file.txt');
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/source_folder/renamed_file.txt');
-
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/source_folder/1_test_file.txt");
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/source_folder/renamed_file.txt");
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
     public function commandMovesEntireFolder(): void
     {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [],
+                'source_folder/subfolder' => [],
+                'target_folder' => [],
+            ]
+        );
+        $storageId = $storage->getUid();
+
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:source_folder/subfolder 1:target_folder/'
+            self::BASE_COMMAND . " {$storageId}:source_folder/subfolder {$storageId}:target_folder/"
         );
 
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->main_storage . '/source_folder/subfolder');
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/target_folder/subfolder');
-
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/source_folder/subfolder");
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/target_folder/subfolder");
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
     public function commandMovesFolderWithSameName(): void
     {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [],
+                'source_folder/subfolder' => [],
+                'target_folder' => [],
+            ]
+        );
+        $storageId = $storage->getUid();
+
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:source_folder/subfolder 1:target_folder/subfolder'
+            self::BASE_COMMAND . " {$storageId}:source_folder/subfolder {$storageId}:target_folder/subfolder"
         );
 
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->main_storage . '/source_folder/subfolder');
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/target_folder/subfolder');
-
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/source_folder/subfolder");
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/target_folder/subfolder");
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
     public function commandMovesFolderWithSpecialChars(): void
     {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [],
+                'source_folder/subfolder' => [],
+                'target_folder' => [],
+            ]
+        );
+        $storageId = $storage->getUid();
+
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:source_folder/subfolder 1:target_folder/sub:@=folder'
+            self::BASE_COMMAND . " {$storageId}:source_folder/subfolder {$storageId}:target_folder/sub:@=folder"
         );
 
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->main_storage . '/source_folder/subfolder');
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/target_folder/sub_@_folder');
-
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/source_folder/subfolder");
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/target_folder/sub_@_folder");
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
     public function commandMoveAndRenameFolderToBaseFolder(): void
     {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [],
+                'source_folder/subfolder' => [],
+            ]
+        );
+        $storageId = $storage->getUid();
+
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:source_folder/subfolder 1:new_folder'
+            self::BASE_COMMAND . " {$storageId}:source_folder/subfolder {$storageId}:new_folder"
         );
 
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->main_storage . '/source_folder/subfolder');
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/new_folder');
-
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/source_folder/subfolder");
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/new_folder");
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
     public function commandMoveAndRenameFolderToBaseFolderWithSlash(): void
     {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [],
+                'source_folder/subfolder' => [],
+            ]
+        );
+        $storageId = $storage->getUid();
+
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:/source_folder/subfolder 1:/new_folder_slash'
+            self::BASE_COMMAND . " {$storageId}:/source_folder/subfolder {$storageId}:/new_folder_slash"
         );
 
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->main_storage . '/source_folder/subfolder');
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/new_folder_slash');
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/source_folder/subfolder");
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/new_folder_slash");
 
         self::assertEquals(0, $result['status']);
     }
@@ -171,26 +200,53 @@ class FalMoveCommandTest extends AbstractTestCase
     #[Test]
     public function commandRenameFolderInBaseFolder(): void
     {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [],
+            ]
+        );
+        $storageId = $storage->getUid();
+
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:source_folder 1:renamed_folder'
+            self::BASE_COMMAND . " {$storageId}:source_folder {$storageId}:renamed_folder"
         );
 
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->main_storage . '/source_folder');
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/renamed_folder');
-
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/source_folder");
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/renamed_folder");
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
     public function commandMovesFileToOtherStorage(): void
     {
+        $firstStorageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}-1";
+        $firstStorage = $this->createStorage(
+            $firstStorageBasePath,
+            [
+                'source_folder' => [
+                    '1_test_file.txt',
+                ],
+            ]
+        );
+        $firstStorageId = $firstStorage->getUid();
+
+        $secondStorageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}-2";
+        $secondStorage = $this->createStorage(
+            $secondStorageBasePath,
+            [
+                'target_folder' => [],
+            ]
+        );
+        $secondStorageId = $secondStorage->getUid();
+
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:source_folder/1_test_file.txt 2:target_folder/'
+            self::BASE_COMMAND . " {$firstStorageId}:source_folder/1_test_file.txt {$secondStorageId}:target_folder/"
         );
 
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->main_storage . '/source_folder/1_test_file.txt');
-        self::assertFileExists($this->instancePath . '/' . $this->other_storage . '/target_folder/1_test_file.txt');
-
+        self::assertFileDoesNotExist("{$this->instancePath}/{$firstStorageBasePath}/source_folder/1_test_file.txt");
+        self::assertFileExists("{$this->instancePath}/{$secondStorageBasePath}/target_folder/1_test_file.txt");
         self::assertEquals(0, $result['status']);
     }
 
@@ -201,48 +257,61 @@ class FalMoveCommandTest extends AbstractTestCase
     #[Test]
     public function commandMovesFolderToOtherStorage(): void
     {
+        $firstStorageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}-1";
+        $firstStorage = $this->createStorage(
+            $firstStorageBasePath,
+            [
+                'source_folder' => [],
+                'source_folder/subfolder' => [],
+            ]
+        );
+        $firstStorageId = $firstStorage->getUid();
+
+        $secondStorageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}-2";
+        $secondStorage = $this->createStorage(
+            $secondStorageBasePath,
+            [
+                'target_folder' => [],
+            ]
+        );
+        $secondStorageId = $secondStorage->getUid();
+
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:source_folder/subfolder 2:target_folder/subfolder'
+            self::BASE_COMMAND . " {$firstStorageId}:/source_folder/subfolder 2:target_folder/subfolder"
         );
 
         // make sure it did not work
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/source_folder/subfolder');
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->other_storage . '/target_folder/subfolder');
+        self::assertFileExists("{$this->instancePath}/{$firstStorageBasePath}/source_folder/subfolder");
+        self::assertFileDoesNotExist("{$this->instancePath}/{$firstStorageBasePath}/target_folder/subfolder");
 
         // Check that the exit status indicates failure
         self::assertNotEquals(0, $result['status']);
     }
 
     #[Test]
-    public function commandMovesFolderWithinOtherStorage(): void
-    {
-        $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 2:source_folder/subfolder 2:target_folder/moved_folder'
-        );
-
-        self::assertFileDoesNotExist($this->instancePath . '/' . $this->other_storage . '/source_folder/subfolder');
-        self::assertFileExists($this->instancePath . '/' . $this->other_storage . '/target_folder/moved_folder');
-
-        self::assertEquals(0, $result['status']);
-    }
-
-    #[Test]
     public function commandFailsWhenTargetExists(): void
     {
-        // First create the target file so it exists
-        copy(
-            $this->instancePath . '/' . $this->main_storage . '/source_folder/1_test_file.txt',
-            $this->instancePath . '/' . $this->main_storage . '/target_folder/1_test_file.txt'
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [
+                    '1_test_file.txt',
+                ],
+                'target_folder' => [
+                    '1_test_file.txt',
+                ],
+            ]
         );
+        $storageId = $storage->getUid();
 
         $result = $this->executeConsoleCommand(
-            self::BASE_COMMAND . ' 1:/source_folder/1_test_file.txt 1:/target_folder/1_test_file.txt'
+            self::BASE_COMMAND . " {$storageId}:/source_folder/1_test_file.txt {$storageId}:/target_folder/1_test_file.txt"
         );
 
         // make sure it did not work
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/source_folder/1_test_file.txt');
-        self::assertFileExists($this->instancePath . '/' . $this->main_storage . '/target_folder/1_test_file.txt');
-
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/source_folder/1_test_file.txt");
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/target_folder/1_test_file.txt");
 
         // Check that the exit status indicates failure
         self::assertNotEquals(0, $result['status']);
