@@ -81,6 +81,26 @@ abstract class AbstractTestCase extends FunctionalTestCase
         return $storage;
     }
 
+    /**
+     * Create a site configuration for testing.
+     *
+     * NOTE: Calling this function will remove any site configuration directory with the same identifier.
+     */
+    protected function setUpSiteConfiguration(
+        string $identifier,
+        array $configuration = []
+    ): void {
+        $siteDir = "{$this->instancePath}/typo3conf/sites/{$identifier}/";
+
+        GeneralUtility::rmdir($siteDir, true);
+        GeneralUtility::mkdir_deep($siteDir);
+        GeneralUtility::writeFile(
+            "{$siteDir}/config.yaml",
+            \Symfony\Component\Yaml\Yaml::dump($configuration, 99),
+            true
+        );
+    }
+
     protected function generateUniqueIdentifier(string $input): string
     {
         return substr(sha1($input), 0, 7);

@@ -17,8 +17,8 @@ class ConsolidateExternalUrlsCommandTest extends AbstractTestCase
         // Set up the site configuration
         $this->setUpSiteConfiguration(
             'testsite',  // This should match your test command identifier
-            'https://example.com',
             [
+                'rootPageId' => 1,
                 'base' => '/',
                 'languages' => [
                     [
@@ -36,38 +36,6 @@ class ConsolidateExternalUrlsCommandTest extends AbstractTestCase
                     ],
                 ],
             ]
-        );
-    }
-
-    /**
-     * Create a site configuration for testing
-     */
-    protected function setUpSiteConfiguration(string $identifier, string $baseUrl, array $configuration = []): void
-    {
-        $configuration = array_replace_recursive(
-            [
-                'rootPageId' => 1,
-                'base' => $baseUrl,
-            ],
-            $configuration
-        );
-
-        // Create sites configuration directory if it doesn't exist
-        $sitesConfigurationDir = $this->instancePath . '/typo3conf/sites';
-        if (!file_exists($sitesConfigurationDir)) {
-            mkdir($sitesConfigurationDir, 0755, true);
-        }
-
-        // Create site directory
-        $siteDir = $sitesConfigurationDir . '/' . $identifier;
-        if (!file_exists($siteDir)) {
-            mkdir($siteDir, 0755, true);
-        }
-
-        // Write site configuration
-        file_put_contents(
-            $siteDir . '/config.yaml',
-            \Symfony\Component\Yaml\Yaml::dump($configuration, 99)
         );
     }
 
