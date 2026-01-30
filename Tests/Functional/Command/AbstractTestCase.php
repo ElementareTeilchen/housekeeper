@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elementareteilchen\Housekeeper\Tests\Functional\Command;
 
+use TYPO3\CMS\Core\Resource\Index\Indexer;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
 use TYPO3\CMS\Core\Resource\StorageRepository;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -99,6 +100,55 @@ abstract class AbstractTestCase extends FunctionalTestCase
             \Symfony\Component\Yaml\Yaml::dump($configuration, 99),
             true
         );
+    }
+
+    protected function getRecordDatabaseRowByUid(string $table, int $uid): array|false
+    {
+        return $this->getConnectionPool()
+            ->getConnectionForTable($table)
+            ->select(
+                ['*'],
+                $table,
+                ['uid' => $uid]
+            )
+            ->fetchAssociative();
+    }
+
+    /**
+     * Search for a specific refindex entry.
+     *
+     * @param string $referencedTable The table that IS referenced
+     * @param int $referencedUid The UID of the record that IS referenced
+     * @param string $referencingTable The table that HOLDS the reference
+     * @param string $referencingField The field of the table that HOLDS the reference
+     * @param int $referencingUid The UID of the record that HOLDS the reference
+     */
+    protected function getReferenceIndexEntry(
+        string $referencedTable,
+        int $referencedUid,
+        string $referencingTable,
+        string $referencingField,
+        int $referencingUid
+    ): array|false {
+        return $this->getConnectionPool()
+            ->getConnectionForTable('sys_refindex')
+            ->select(
+                ['*'],
+                'sys_refindex',
+                [
+                    'ref_table' => $referencedTable,
+                    'ref_uid' => $referencedUid,
+                    'tablename' => $referencingTable,
+                    'field' => $referencingField,
+                    'recuid' => $referencingUid,
+                ]
+            )
+            ->fetchAssociative();
+    }
+
+    protected function reindexStorage(ResourceStorage $storage): void
+    {
+        GeneralUtility::makeInstance(Indexer::class, $storage)->processChangesInStorages();
     }
 
     protected function generateUniqueIdentifier(string $input): string
