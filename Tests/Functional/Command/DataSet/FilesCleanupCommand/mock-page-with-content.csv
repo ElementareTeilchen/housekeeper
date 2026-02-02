@@ -1,7 +1,0 @@
-pages
-,uid,pid,doktype,title,hidden,deleted,sys_language_uid,sorting
-,1,0,1,Testpage,0,0,0,0
-
-tt_content
-,uid,pid,CType,header,hidden,deleted,sys_language_uid,sorting
-,1,1,header,Testcontent,0,0,0,0
