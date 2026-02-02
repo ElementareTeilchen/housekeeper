@@ -287,8 +287,7 @@ class FilesCleanupCommandTest extends AbstractTestCase
 
         self::assertEmpty($this->getRecordDatabaseRowByUid('sys_file', $file->getUid()));
         self::assertEmpty($this->getRecordDatabaseRowByUid('sys_file_metadata', $file->getUid()));
-        $this->expectException(\InvalidArgumentException::class);
-        $storage->getFile('testfile.txt');
+        self::assertTrue($this->falFileAccessFails($storage, 'testfile.txt'));
     }
 
     #[Test]
@@ -324,7 +323,7 @@ class FilesCleanupCommandTest extends AbstractTestCase
         self::assertNotEmpty(
             $this->getRecordDatabaseRowByUid('sys_file_metadata', $file->getUid())
         );
-        self::assertNotEmpty($storage->getFile('testfile.txt'));
+        self::assertFalse($this->falFileAccessFails($storage, 'testfile.txt'));
     }
 
     #[Test]
@@ -365,11 +364,9 @@ class FilesCleanupCommandTest extends AbstractTestCase
         self::assertNotEmpty(
             $this->getRecordDatabaseRowByUid('sys_file_metadata', $file->getUid())
         );
-        self::assertNotEmpty($storage->getFile('testfile.txt'));
+        self::assertFalse($this->falFileAccessFails($storage, 'testfile.txt'));
     }
 
-    // TODO: Fails currently, because the deletion seems to go by sys_file UID order, instead of leaf -> root direction
-    //   through the directory tree
     #[Test]
     public function commandRemovesEmptyParentFolder(): void
     {
@@ -461,7 +458,7 @@ class FilesCleanupCommandTest extends AbstractTestCase
         $file2 = $storage->getFileByIdentifier('/file-2.txt');
 
         // Set up reference not yet indexed
-        $this->importCSVDataSet(__DIR__ . '/DataSet/FilesCleanupCommand/mock-page-with-content.csv');
+        $this->importCSVDataSet(__DIR__ . '/DataSet/Generic/mock-page-with-content.csv');
         $this->getConnectionPool()
             ->getConnectionForTable('tt_content')
             ->update(
@@ -543,7 +540,7 @@ class FilesCleanupCommandTest extends AbstractTestCase
 
         $file = $storage->getFileByIdentifier('/delete.txt');
 
-        $this->importCSVDataSet(__DIR__ . '/DataSet/FilesCleanupCommand/mock-page-with-content.csv');
+        $this->importCSVDataSet(__DIR__ . '/DataSet/Generic/mock-page-with-content.csv');
         $this->getConnectionPool()
             ->getConnectionForTable('tt_content')
             ->update(

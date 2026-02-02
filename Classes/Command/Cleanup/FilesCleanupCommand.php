@@ -196,7 +196,16 @@ their path is written to a log file in var/log for further inspection.
     {
         $folder = $this->getFolderFromStorage('/');
 
-        $searchDemand = FileSearchDemand::createForSearchTerm($searchWord)->withRecursive();
+        // We need to add the ordering by identifier here, so we traverse the directory tree from leaf to root. The
+        // default ordering, if not explicitly specified, is by sys_file UID. This fixes an issue where empty parent
+        // folders were not deleted reliably, if the deletion order was like this, for example:
+        // - parent-folder/file-to-delete.txt
+        // - parent-folder/sub-folder/file-to-delete.txt
+        // In that case, the empty 'parent-folder' would remain. Specifying the explicit ordering fixes that issue.
+        $searchDemand = FileSearchDemand::createForSearchTerm($searchWord)
+            ->withRecursive()
+            ->addOrdering('sys_file', 'identifier', 'DESC');
+
         $files = $folder->searchFiles($searchDemand);
 
         return $files;

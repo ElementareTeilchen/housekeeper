@@ -192,4 +192,17 @@ abstract class AbstractTestCase extends FunctionalTestCase
             'output' => $output,
         ];
     }
+
+    /**
+     * Returns `true`, if file access via FAL API fails and causes an exception.
+     */
+    protected function falFileAccessFails(ResourceStorage $storage, string $identifier): bool
+    {
+        try {
+            $storage->getFile($identifier);
+        } catch (\Throwable $e) {
+            return true;
+        }
+        return false;
+    }
 }
