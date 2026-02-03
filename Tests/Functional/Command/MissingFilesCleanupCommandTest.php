@@ -228,7 +228,6 @@ class MissingFilesCleanupCommandTest extends AbstractTestCase
         self::assertFalse($this->falFileAccessFails($storage, 'existing/folder/structure/missing.txt'));
     }
 
-    // TODO: Fails. We should not delete files marked as missing that are not actually missing.
     #[Test]
     public function commandDoesNotRemoveFileWronglyMarkedAsMissing(): void
     {

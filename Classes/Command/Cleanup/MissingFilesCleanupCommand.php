@@ -181,6 +181,11 @@ their path is written to a log file in var/log for further inspection.
      */
     protected function beforeFileDelete(array $record, string $file, string $directory): bool
     {
+        if (file_exists($file)) {
+            $this->io->writeln("<warning>File with identifier {$record['identifier']} (uid={$record['uid']}) is marked as missing, but does exist! Aborting deletion.</warning>");
+            return false;
+        }
+
         // IMPORTANT: To be able to delete the file, we first need to mark it as NOT missing
         $success = $this->setFileMissingStatus($record['uid'], false);
         if (!$success) {
