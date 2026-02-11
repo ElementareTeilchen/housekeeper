@@ -1,0 +1,23 @@
+sys_log
+,uid,details,error
+,101,User %s has cleared the cache (cacheCmd=%s),0
+,102,[scheduler] something happened,0
+,103,User %s logged in from ###IP###,0
+,104,Record '%s' (%s) was deleted unrecoverable from page '%s' (%s),0
+,105,Login-attempt from ###IP### for username '%s' with an empty password!,3
+,106,"Core: Exception handler (WEB): Uncaught TYPO3 Exception: rawurlencode() expects parameter 1 to be string, int given | TypeError thrown in file /path/to/somefile.php in line 331. Requested URL: https://www.example.com/something.php",2
+,107,Something else unrelated happened,0
+,201,User %s has cleared the cache (cacheCmd=%s),0
+,202,[scheduler] something happened,0
+,203,User %s logged in from ###IP###,0
+,204,Record '%s' (%s) was deleted unrecoverable from page '%s' (%s),0
+,205,Login-attempt from ###IP### for username '%s' with an empty password!,3
+,206,"Core: Exception handler (WEB): Uncaught TYPO3 Exception: rawurlencode() expects parameter 1 to be string, int given | TypeError thrown in file /path/to/somefile.php in line 331. Requested URL: https://www.example.com/something.php",2
+,207,Something else unrelated happened,0
+,301,User %s has cleared the cache (cacheCmd=%s),0
+,302,[scheduler] something happened,0
+,303,User %s logged in from ###IP###,0
+,304,Record '%s' (%s) was deleted unrecoverable from page '%s' (%s),0
+,305,Login-attempt from ###IP### for username '%s' with an empty password!,3
+,306,"Core: Exception handler (WEB): Uncaught TYPO3 Exception: rawurlencode() expects parameter 1 to be string, int given | TypeError thrown in file /path/to/somefile.php in line 331. Requested URL: https://www.example.com/something.php",2
+,307,Something else unrelated happened,0
