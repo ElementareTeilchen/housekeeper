@@ -387,4 +387,61 @@ class MissingFilesCleanupCommandTest extends AbstractTestCase
 
         self::assertFalse($this->falFileAccessFails($storage, 'missing.txt'));
     }
+
+    #[Test]
+    public function commandRemovesFalDataOfMissingFileFromNonWritableStorage(): void
+    {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                '' => [
+                    'missing.txt',
+                ],
+            ]
+        );
+        $storageId = $storage->getUid();
+
+        $this->setStorageWritableFlag($storageId, false);
+
+        $file = $storage->getFile('missing.txt');
+
+        unlink("{$this->instancePath}/{$storageBasePath}/missing.txt");
+        $this->reindexStorage($storage);
+
+        $result = $this->executeConsoleCommand(self::BASE_COMMAND . " -n -s {$storageId}");
+        self::assertEquals(0, $result['status']);
+
+        self::assertTrue($this->falFileAccessFails($storage, $file->getIdentifier()));
+        self::assertFalse($this->getRecordDatabaseRowByUid('sys_file', $file->getUid()));
+        self::assertFalse($this->getRecordDatabaseRowByUid('sys_file_metadata', $file->getUid()));
+    }
+
+    #[Test]
+    public function commandDoesNotRecreateMissingDirectoriesInNonWritableStorage(): void
+    {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'missing' => [],
+                'missing/folder' => [],
+                'missing/folder/structure' => [
+                    'missing.txt'
+                ],
+            ]
+        );
+        $storageId = $storage->getUid();
+
+        GeneralUtility::rmdir("{$this->instancePath}/{$storageBasePath}/missing", true);
+
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/missing/");
+
+        $this->setStorageWritableFlag($storageId, false);
+
+        $result = $this->executeConsoleCommand(self::BASE_COMMAND . " -n -s {$storageId}");
+        self::assertEquals(0, $result['status']);
+
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/missing/");
+    }
 }

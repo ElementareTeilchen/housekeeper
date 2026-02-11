@@ -278,7 +278,7 @@ class FilesCleanupCommandTest extends AbstractTestCase
         $storageId = $storage->getUid();
 
         $file = $storage->getFile('testfile.txt');
-        self::assertNotEmpty($file);;
+        self::assertNotEmpty($file);
         self::assertNotEmpty($this->getRecordDatabaseRowByUid('sys_file', $file->getUid()));
         self::assertNotEmpty($this->getRecordDatabaseRowByUid('sys_file_metadata', $file->getUid()));
 
@@ -557,5 +557,32 @@ class FilesCleanupCommandTest extends AbstractTestCase
         self::assertEquals(0, $result['status']);
 
         self::assertFileExists("{$this->instancePath}/{$storageBasePath}/delete.txt");
+    }
+
+    #[Test]
+    public function commandDoesNotRemoveFileFromNonWritableStorage(): void
+    {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                '' => [
+                    'delete.txt',
+                ],
+            ]
+        );
+        $storageId = $storage->getUid();
+
+        $this->setStorageWritableFlag($storageId, false);
+
+        $file = $storage->getFile('delete.txt');
+
+        $result = $this->executeConsoleCommand(self::BASE_COMMAND . " -n -s {$storageId} delete.txt");
+        self::assertEquals(0, $result['status']);
+
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/delete.txt");
+        self::assertFalse($this->falFileAccessFails($storage, $file->getIdentifier()));
+        self::assertIsArray($this->getRecordDatabaseRowByUid('sys_file', $file->getUid()));
+        self::assertIsArray($this->getRecordDatabaseRowByUid('sys_file_metadata', $file->getUid()));
     }
 }

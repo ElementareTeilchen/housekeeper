@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elementareteilchen\Housekeeper\Tests\Functional\Command;
 
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Resource\Index\Indexer;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
 use TYPO3\CMS\Core\Resource\StorageRepository;
@@ -80,6 +81,21 @@ abstract class AbstractTestCase extends FunctionalTestCase
         }
 
         return $storage;
+    }
+
+    protected function setStorageWritableFlag(int $uid, bool $isWritable): void
+    {
+        $this->getConnectionPool()
+            ->getConnectionForTable('sys_file_storage')
+            ->update(
+                'sys_file_storage',
+                ['is_writable' => (int)$isWritable],
+                ['uid' => $uid],
+                [
+                    Connection::PARAM_INT,
+                    Connection::PARAM_INT,
+                ]
+            );
     }
 
     /**

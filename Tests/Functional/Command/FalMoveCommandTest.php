@@ -255,7 +255,7 @@ class FalMoveCommandTest extends AbstractTestCase
      * is not yet implemented, thus this fails
      */
     #[Test]
-    public function commandMovesFolderToOtherStorage(): void
+    public function commandDoesNotMoveFolderToOtherStorage(): void
     {
         $firstStorageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}-1";
         $firstStorage = $this->createStorage(
@@ -315,5 +315,99 @@ class FalMoveCommandTest extends AbstractTestCase
 
         // Check that the exit status indicates failure
         self::assertNotEquals(0, $result['status']);
+    }
+
+    #[Test]
+    public function commandDoesNotMoveFilesInNonWritableStorage(): void
+    {
+        $storageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}";
+        $storage = $this->createStorage(
+            $storageBasePath,
+            [
+                'source_folder' => [
+                    'testfile.txt',
+                ],
+                'target_folder' => [
+                ],
+            ]
+        );
+        $storageId = $storage->getUid();
+        $this->setStorageWritableFlag($storageId, false);
+
+        $result = $this->executeConsoleCommand(
+            self::BASE_COMMAND . " {$storageId}:/source_folder/testfile.txt {$storageId}:/target_folder/testfile.txt"
+        );
+        self::assertNotEquals(0, $result['status']);
+
+        self::assertFileExists("{$this->instancePath}/{$storageBasePath}/source_folder/testfile.txt");
+        self::assertFileDoesNotExist("{$this->instancePath}/{$storageBasePath}/target_folder/testfile.txt");
+    }
+
+    #[Test]
+    public function commandDoesNotMoveFilesToNonWritableStorage(): void
+    {
+        $firstStorageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}-1";
+        $firstStorage = $this->createStorage(
+            $firstStorageBasePath,
+            [
+                '' => [
+                    'testfile.txt',
+                ],
+            ]
+        );
+        $firstStorageId = $firstStorage->getUid();
+
+        $secondStorageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}-2";
+        $secondStorage = $this->createStorage(
+            $secondStorageBasePath,
+            [
+                '' => [],
+            ]
+        );
+        $secondStorageId = $secondStorage->getUid();
+
+        $this->setStorageWritableFlag($secondStorageId, false);
+
+        $result = $this->executeConsoleCommand(
+            self::BASE_COMMAND . " {$firstStorageId}:/testfile.txt {$secondStorageId}:/testfile.txt"
+        );
+        self::assertNotEquals(0, $result['status']);
+
+        self::assertFileExists("{$this->instancePath}/{$firstStorageBasePath}/testfile.txt");
+        self::assertFileDoesNotExist("{$this->instancePath}/{$secondStorageBasePath}/testfile.txt");
+    }
+
+    #[Test]
+    public function commandDoesNotMoveFilesFromNonWritableStorage(): void
+    {
+        $firstStorageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}-1";
+        $firstStorage = $this->createStorage(
+            $firstStorageBasePath,
+            [
+                '' => [
+                    'testfile.txt',
+                ],
+            ]
+        );
+        $firstStorageId = $firstStorage->getUid();
+
+        $secondStorageBasePath = "storage-{$this->generateUniqueIdentifier(__FUNCTION__)}-2";
+        $secondStorage = $this->createStorage(
+            $secondStorageBasePath,
+            [
+                '' => [],
+            ]
+        );
+        $secondStorageId = $secondStorage->getUid();
+
+        $this->setStorageWritableFlag($firstStorageId, false);
+
+        $result = $this->executeConsoleCommand(
+            self::BASE_COMMAND . " {$firstStorageId}:/testfile.txt {$secondStorageId}:/testfile.txt"
+        );
+        self::assertNotEquals(0, $result['status']);
+
+        self::assertFileExists("{$this->instancePath}/{$firstStorageBasePath}/testfile.txt");
+        self::assertFileDoesNotExist("{$this->instancePath}/{$secondStorageBasePath}/testfile.txt");
     }
 }
