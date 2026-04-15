@@ -9,7 +9,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior;
 use TYPO3\CMS\Core\Resource\Event\AfterFolderRenamedEvent;
-use TYPO3\CMS\Core\Resource\Exception;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Utility\File\ExtendedFileUtility;
 
@@ -154,15 +153,10 @@ class FileOperationService
     private function executeCommand(array $fileCommand): array
     {
         try {
-            // TODO: Refactor once v12 support is dropped
-            if (class_exists(DuplicationBehavior::class)) {
-                $this->extendedFileUtility->setExistingFilesConflictMode(DuplicationBehavior::CANCEL);
-            } elseif (class_exists(\TYPO3\CMS\Core\Resource\DuplicationBehavior::class)) {
-                $this->extendedFileUtility->setExistingFilesConflictMode(\TYPO3\CMS\Core\Resource\DuplicationBehavior::CANCEL);
-            }
-            $this->extendedFileUtility->start($fileCommand);
+            $this->extendedFileUtility->setExistingFilesConflictMode(DuplicationBehavior::CANCEL);
+            $this->extendedFileUtility->start($fileCommand, []);
             return $this->extendedFileUtility->processData();
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $this->io->writeln('<error>' . $e->getMessage() . '</error>');
             return [];
         }
