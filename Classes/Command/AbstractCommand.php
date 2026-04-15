@@ -21,7 +21,6 @@ use TYPO3\CMS\Core\Resource\StorageRepository;
  */
 abstract class AbstractCommand extends Command
 {
-
     /**
      * Dry run flag
      */
@@ -50,7 +49,12 @@ abstract class AbstractCommand extends Command
      */
     protected function addCommonOptions(): void
     {
-        $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Only pretend operations');
+        $this->addOption(
+            'dry-run',
+            null,
+            InputOption::VALUE_NONE,
+            'Only pretend operations'
+        );
     }
 
     /**
@@ -89,7 +93,7 @@ abstract class AbstractCommand extends Command
         $userSession = null;
         try {
             $userSession = $GLOBALS['BE_USER']->getSession();
-        } catch (\TypeError $e) {
+        } catch (\TypeError) {
             // Workaround for core bug:
             // AbstractUserAuthentication::userSession might be null, but AbstractUserAuthentication::getSession() is
             // expected to return a UserSession type, instead of a ?UserSession. So the function call fails, if no user

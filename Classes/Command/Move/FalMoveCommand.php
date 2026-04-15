@@ -11,7 +11,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Resource\StorageRepository;
 
@@ -30,13 +29,11 @@ class FalMoveCommand extends AbstractCommand
      * @param ResourceFactory $resourceFactory TYPO3 resource factory
      * @param StorageRepository $storageRepository TYPO3 storage repository
      * @param FileOperationService $fileOperationService Service for file operations
-     * @param EventDispatcher $eventDispatcher TYPO3 event dispatcher
      */
     public function __construct(
         ResourceFactory $resourceFactory,
         StorageRepository $storageRepository,
-        private readonly FileOperationService $fileOperationService,
-        private readonly EventDispatcher $eventDispatcher
+        private readonly FileOperationService $fileOperationService
     ) {
         parent::__construct($resourceFactory, $storageRepository);
     }
@@ -44,20 +41,30 @@ class FalMoveCommand extends AbstractCommand
     /**
      * Configure the command
      */
-    public function configure()
+    public function configure(): void
     {
-        $this->setHelp('
-Move or rename a file. Specify the source and the target with optional storageId, default is 1. Works similar to bash mv command. Move between different storages only works with files, not folders.
-Examples:
-typo3 housekeeper:move <source> <target>
-typo3 housekeeper:move old/path other-path/
-typo3 housekeeper:move old.pdf new.pdf
-typo3 housekeeper:move 1:old/path 1:new-path
-typo3 housekeeper:move 1:old.pdf 2:other-path/new.pdf
-');
+        $this->setHelp(
+            <<<'EOF'
+            Move or rename a file. Specify the source and the target with optional storageId, default is 1. Works similar to bash mv command. Move between different storages only works with files, not folders.
+            Examples:
+            typo3 housekeeper:move <source> <target>
+            typo3 housekeeper:move old/path other-path/
+            typo3 housekeeper:move old.pdf new.pdf
+            typo3 housekeeper:move 1:old/path 1:new-path
+            typo3 housekeeper:move 1:old.pdf 2:other-path/new.pdf
+            EOF
+        );
         $this->addCommonOptions();
-        $this->addArgument('source', InputArgument::REQUIRED, 'Combined identifier of the source folder/file');
-        $this->addArgument('target', InputArgument::REQUIRED, 'Combined identifier of the target folder/file');
+        $this->addArgument(
+            'source',
+            InputArgument::REQUIRED,
+            'Combined identifier of the source folder/file'
+        );
+        $this->addArgument(
+            'target',
+            InputArgument::REQUIRED,
+            'Combined identifier of the target folder/file'
+        );
     }
 
     /**

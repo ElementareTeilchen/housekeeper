@@ -21,29 +21,31 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class SysLogCleanupCommand extends AbstractCommand
 {
+    public function configure(): void
+    {
+        $this->setDescription('Cleanup TYPO3 sys_log table from outdated entries.');
+        $this->setHelp(
+            <<<'EOF'
+            This command deletes entries from sys_log if they are older than --retentionPeriod and match one of the following criteria:
+             - details LIKE "%has cleared the cache%"
+             - details LIKE "[scheduler%"
+             - details LIKE "User %s logged in from%"
+             - details LIKE "%was deleted unrecoverable%"
+             - error > 0
+             - tstamp older than --cutoffPeriod (default 360)
 
-	public function configure()
-	{
-		$this->setDescription('Cleanup TYPO3 sys_log table from outdated entries.');
-		$this->setHelp('
-This command deletes entries from sys_log if they are older than --retentionPeriod and match one of the following criteria:
- - details LIKE "%has cleared the cache%"
- - details LIKE "[scheduler%"
- - details LIKE "User %s logged in from%"
- - details LIKE "%was deleted unrecoverable%"
- - error > 0
- - tstamp older than --cutoffPeriod (default 360)
-
-Use --dry-run to see row count without deleting.');
+            Use --dry-run to see row count without deleting.'
+            EOF
+        );
 
         $this->addCommonOptions();
-		$this->addOption(
-			'cutoffPeriod',
-			'c',
-			InputOption::VALUE_OPTIONAL,
-			'Any row older than this value will be deleted (in days).',
-			'360'
-		);
+        $this->addOption(
+            'cutoffPeriod',
+            'c',
+            InputOption::VALUE_OPTIONAL,
+            'Any row older than this value will be deleted (in days).',
+            '360'
+        );
         $this->addOption(
             'retentionPeriod',
             'r',
@@ -51,10 +53,10 @@ Use --dry-run to see row count without deleting.');
             'Any row younger than this value will not be deleted (in days).',
             '10'
         );
-	}
+    }
 
-	public function execute(InputInterface $input, OutputInterface $output): int
-	{
+    public function execute(InputInterface $input, OutputInterface $output): int
+    {
         try {
             $this->initializeCommand($input, $output);
         } catch (\Throwable $e) {
@@ -84,7 +86,7 @@ Use --dry-run to see row count without deleting.');
                 $qb->expr()->lt('tstamp', $qb->createNamedParameter($cutoffTstamp, ParameterType::INTEGER)),
                 $qb->expr()->like('details', $qb->createNamedParameter('%was deleted unrecoverable%')),
                 $qb->expr()->gt('error', $qb->createNamedParameter(0, ParameterType::INTEGER)),
-            )
+            ),
         ];
 
         if ($this->dryRun) {
@@ -105,6 +107,6 @@ Use --dry-run to see row count without deleting.');
             ->executeStatement();
 
         $this->io->success('Cleanup completed. Total deleted: ' . $affected);
-		return Command::SUCCESS;
-	}
+        return Command::SUCCESS;
+    }
 }

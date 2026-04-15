@@ -12,8 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Resource\Search\FileSearchDemand;
 use TYPO3\CMS\Core\Resource\Search\Result\FileSearchResultInterface;
-use TYPO3\CMS\Core\Resource\Security\FileNameValidator;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Command for cleaning up files by a specified identifier pattern
@@ -25,7 +23,6 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class FilesCleanupCommand extends AbstractCleanupCommand
 {
-
     /**
      * When deleting files, remove new empty parent folders
      */
@@ -34,21 +31,33 @@ class FilesCleanupCommand extends AbstractCleanupCommand
     /**
      * Configure the command
      */
-    public function configure()
+    public function configure(): void
     {
-        $this->setHelp('
-Cleanup files via a given identifier.
-The identifier is passed as argument: E.g. .jpg.webp.
+        $this->setHelp(
+            <<<'EOF'
+            Cleanup files via a given identifier.
+            The identifier is passed as argument: E.g. .jpg.webp.
 
-All matching files are then deleted via the systems API delete command.
-This should clean up all other metadata and other related records also.
+            All matching files are then deleted via the systems API delete command.
+            This should clean up all other metadata and other related records also.
 
-In case files still have references or for some other reason can not be deleted,
-their path is written to a log file in var/log for further inspection.
-');
+            In case files still have references or for some other reason can not be deleted,
+            their path is written to a log file in var/log for further inspection.
+            EOF
+        );
         $this->addCleanupOptions();
-        $this->addArgument('identifier', InputArgument::REQUIRED, 'Identifier of the files to delete. E.g. ".jpg.webp"');
-        $this->addOption('removeEmptyParentFolder', 'e', InputOption::VALUE_OPTIONAL, 'When deleting files, remove new empty parent folders. Pass recursive as value to remove all empty parent folders', false);
+        $this->addArgument(
+            'identifier',
+            InputArgument::REQUIRED,
+            'Identifier of the files to delete. E.g. ".jpg.webp"'
+        );
+        $this->addOption(
+            'removeEmptyParentFolder',
+            'e',
+            InputOption::VALUE_OPTIONAL,
+            'When deleting files, remove new empty parent folders. Pass recursive as value to remove all empty parent folders',
+            false
+        );
     }
 
     /**
@@ -73,7 +82,6 @@ their path is written to a log file in var/log for further inspection.
             'recursive' => 'recursive',
             default => false,
         };
-
 
         $fileSearchResults = $this->search($identifier);
 
@@ -162,7 +170,6 @@ their path is written to a log file in var/log for further inspection.
      *
      * @param string $path Current path to check
      * @param bool $recursive Recursively remove empty parent folders
-     * @return void
      */
     protected function removeEmptyFolder($dir, $recursive = false): void
     {
@@ -181,8 +188,10 @@ their path is written to a log file in var/log for further inspection.
                     $this->io->writeln('<warning>Failed to remove empty folder: ' . $dir . '</warning>');
                 }
             }
-            if (!$recursive) break;
-            $dir = dirname($dir);
+            if (!$recursive) {
+                break;
+            }
+            $dir = dirname((string)$dir);
         }
     }
 

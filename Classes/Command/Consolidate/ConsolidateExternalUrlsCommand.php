@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elementareteilchen\Housekeeper\Command\Consolidate;
 
+use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Result;
 use Elementareteilchen\Housekeeper\Command\AbstractCommand;
@@ -63,20 +64,56 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
     /**
      * Configure the command
      */
-    public function configure()
+    public function configure(): void
     {
-        $this->setHelp('
-        Finds all links (href) and images (src) with a given path or URL pattern within the given table and field
-        and replaces them with an internal link (t3://file?uid= or t3://page?uid=) if the file identifier or slug can be found in sys_file or pages.
-        ');
+        $this->setHelp(
+            <<<'EOF'
+            Finds all links (href) and images (src) with a given path or URL pattern within the given table and field
+            and replaces them with an internal link (t3://file?uid= or t3://page?uid=) if the file identifier or slug can be found in sys_file or pages.
+            EOF
+        );
         $this->addCommonOptions();
-        $this->addOption('table', '-t', InputOption::VALUE_REQUIRED, 'The database table name')
-            ->addOption('field', '-f', InputOption::VALUE_REQUIRED, 'The database field name')
-            ->addOption('domain', '-d', InputOption::VALUE_REQUIRED, 'The domain to match. E.g. www.your-website.com')
-            ->addOption('path', '-p', InputOption::VALUE_REQUIRED, 'The path to match. E.g. fileadmin. Defaults to fileadmin')
-            ->addOption('all', '-a', InputOption::VALUE_NONE, 'Run on all fields defined in $GLOBALS[\'TCA\']')
-            ->addOption('log', '-l', InputOption::VALUE_NONE, 'Write output to log file in var/log/housekeeper:consolidate-external-urls_DATE.log')
-            ->addArgument('site', InputArgument::REQUIRED, 'The identifier of the site');
+        $this->addOption(
+            'table',
+            '-t',
+            InputOption::VALUE_REQUIRED,
+            'The database table name'
+        );
+        $this->addOption(
+            'field',
+            '-f',
+            InputOption::VALUE_REQUIRED,
+            'The database field name'
+        );
+        $this->addOption(
+            'domain',
+            '-d',
+            InputOption::VALUE_REQUIRED,
+            'The domain to match. E.g. www.your-website.com'
+        );
+        $this->addOption(
+            'path',
+            '-p',
+            InputOption::VALUE_REQUIRED,
+            'The path to match. E.g. fileadmin. Defaults to fileadmin'
+        );
+        $this->addOption(
+            'all',
+            '-a',
+            InputOption::VALUE_NONE,
+            'Run on all fields defined in $GLOBALS[\'TCA\']'
+        );
+        $this->addOption(
+            'log',
+            '-l',
+            InputOption::VALUE_NONE,
+            'Write output to log file in var/log/housekeeper:consolidate-external-urls_DATE.log'
+        );
+        $this->addArgument(
+            'site',
+            InputArgument::REQUIRED,
+            'The identifier of the site'
+        );
     }
 
     /**
@@ -297,7 +334,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             $path = preg_replace('%https?://' . $this->domain . '%', '', $url);
         }
 
-        $parts = explode('#', $path);
+        $parts = explode('#', (string)$path);
         $identifier = trim($parts[0]);
         $anchor = isset($parts[1]) ? '#' . ($type === 'page' ? ltrim($parts[1], 'c') : $parts[1]) : '';
 
@@ -331,7 +368,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
      *
      * @param string $tableName The database table name
      * @param string $fieldName The database field name
-     * @throws \Doctrine\DBAL\Exception
+     * @throws Exception
      */
     private function findAllWithExternalUrls(string $tableName, string $fieldName): Result
     {
@@ -420,7 +457,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
     public function findPageBySlug(string $slug): Result
     {
         $languageId = 0;
-        if (!empty($this->languages) && preg_match('%^/[a-zA-Z]{2}/.*%', $slug)) {
+        if ($this->languages !== [] && preg_match('%^/[a-zA-Z]{2}/.*%', $slug)) {
             foreach ($this->languages as $language) {
                 if ($language['languageId'] > 0 && str_starts_with($slug, (string)$language['base'])) {
                     if ($this->io->isDebug()) {
@@ -453,7 +490,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
      * @param string $regexp Regular expression
      * @param string $fieldValue Field value
      */
-    public function logNoMatches(string $regexp, string $fieldValue)
+    public function logNoMatches(string $regexp, string $fieldValue): void
     {
         $this->io->writeln("No matches found with regex $regexp");
         if ($this->io->isDebug()) {

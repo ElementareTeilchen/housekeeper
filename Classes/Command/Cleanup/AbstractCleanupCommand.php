@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use TYPO3\CMS\Backend\Command\ProgressListener\ReferenceIndexProgressListener;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Database\ReferenceIndex;
+use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
 use TYPO3\CMS\Core\Resource\Folder;
 use TYPO3\CMS\Core\Resource\InaccessibleFolder;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
@@ -59,12 +60,11 @@ class AbstractCleanupCommand extends AbstractCommand
      * @param FileOperationService $fileOperationService Service for file operations
      */
     public function __construct(
-        ResourceFactory                         $resourceFactory,
-        StorageRepository                       $storageRepository,
-        protected readonly ExtendedFileUtility  $extendedFileUtility,
+        ResourceFactory $resourceFactory,
+        StorageRepository $storageRepository,
+        protected readonly ExtendedFileUtility $extendedFileUtility,
         protected readonly FileOperationService $fileOperationService
-    )
-    {
+    ) {
         parent::__construct($resourceFactory, $storageRepository);
     }
 
@@ -117,7 +117,7 @@ class AbstractCleanupCommand extends AbstractCommand
                 $this->storagePath = $this->getFullStoragePath();
                 $this->io->info('Using storage path: ' . $this->storagePath);
             }
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             $this->io->error('Storage ' . $this->storageId . ' not found');
             exit(1);
         }
@@ -151,7 +151,7 @@ class AbstractCleanupCommand extends AbstractCommand
     protected function getFullStoragePath(): string
     {
         return Environment::getPublicPath() . DIRECTORY_SEPARATOR .
-            rtrim($this->getFolderFromStorage('/')->getPublicUrl(), '/');
+            rtrim((string)$this->getFolderFromStorage('/')->getPublicUrl(), '/');
     }
 
     /**
@@ -159,7 +159,7 @@ class AbstractCleanupCommand extends AbstractCommand
      *
      * @param string $path Path within the storage
      * @return Folder|InaccessibleFolder Folder object
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException
+     * @throws InsufficientFolderAccessPermissionsException
      */
     protected function getFolderFromStorage(string $path): Folder|InaccessibleFolder
     {
@@ -212,7 +212,7 @@ class AbstractCleanupCommand extends AbstractCommand
         // Ensure log directory exists
         $logDirectory = dirname($logFileFailed);
         if (!is_dir($logDirectory) && !mkdir($logDirectory, 0775, true) && !is_dir($logDirectory)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $logDirectory));
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $logDirectory), 6530211337);
         }
 
         file_put_contents($logFileFailed, $file . PHP_EOL, FILE_APPEND | LOCK_EX);

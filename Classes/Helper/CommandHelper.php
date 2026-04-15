@@ -37,15 +37,15 @@ class CommandHelper
     public static function getFolderAndFile(mixed $path): array
     {
         // Check if the path contains a colon followed by a slash
-        if (preg_match('/^(\d+):\//', $path, $matches)) {
+        if (preg_match('/^(\d+):\//', (string)$path, $matches)) {
             $prefix = $matches[1] . ':/';
-            $path = substr($path, strlen($prefix));
+            $path = substr((string)$path, strlen($prefix));
         } else {
             $prefix = '';
         }
 
         // Split the path into folder and file parts
-        $parts = explode('/', $path);
+        $parts = explode('/', (string)$path);
         $fileName = array_pop($parts);
         $folderPath = $prefix . implode('/', $parts);
 

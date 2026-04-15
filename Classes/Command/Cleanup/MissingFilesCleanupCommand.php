@@ -40,29 +40,30 @@ class MissingFilesCleanupCommand extends AbstractCleanupCommand
      * @param FileOperationService $fileOperationService Service for file operations
      */
     public function __construct(
-        ResourceFactory      $resourceFactory,
-        StorageRepository    $storageRepository,
-        ExtendedFileUtility  $extendedFileUtility,
+        ResourceFactory $resourceFactory,
+        StorageRepository $storageRepository,
+        ExtendedFileUtility $extendedFileUtility,
         FileOperationService $fileOperationService
-    )
-    {
+    ) {
         parent::__construct($resourceFactory, $storageRepository, $extendedFileUtility, $fileOperationService);
     }
 
     /**
      * Configure the command
      */
-    public function configure()
+    public function configure(): void
     {
-        $this->setHelp('
-Cleanup files missing files.
+        $this->setHelp(
+            <<<'EOF'
+            Cleanup files missing files.
 
-As files can not be deleted if they do not exist, files that are marked as missing
-are touched and marked as not missing before issuing the delete command.
+            As files can not be deleted if they do not exist, files that are marked as missing
+            are touched and marked as not missing before issuing the delete command.
 
-In case files still have references or for some other reason can not be deleted,
-their path is written to a log file in var/log for further inspection.
-');
+            In case files still have references or for some other reason can not be deleted,
+            their path is written to a log file in var/log for further inspection.
+            EOF
+        );
         $this->addCleanupOptions();
     }
 
@@ -248,13 +249,14 @@ their path is written to a log file in var/log for further inspection.
 
         // Skip the first empty element when path starts with '/'
         $startIndex = $parts[0] === '' ? 1 : 0;
+        $counter = count($parts);
 
-        for ($i = $startIndex; $i < count($parts); $i++) {
+        for ($i = $startIndex; $i < $counter; $i++) {
             $path = $path . ($path && $startIndex === 1 ? '/' : '') . $parts[$i];
 
             $fileNotExists = !file_exists($path);
             if ($fileNotExists && !mkdir($path, 0775)) {
-                throw new \RuntimeException('Directory "' . $path . '" could not be created');
+                throw new \RuntimeException('Directory "' . $path . '" could not be created', 8990015053);
             }
 
             // if it now exists, add it to the list
@@ -271,7 +273,6 @@ their path is written to a log file in var/log for further inspection.
 
     /**
      * Removes all previously created directories
-     * @return void
      */
     private function removeCreatedDirectories(): void
     {
