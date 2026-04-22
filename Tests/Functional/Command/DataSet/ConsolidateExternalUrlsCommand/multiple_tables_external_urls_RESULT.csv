@@ -1,7 +1,7 @@
 tt_content
 ,uid,pid,bodytext,header_link
 ,1,0,"Bodytext link <a href=""t3://file?uid=1"">external link</a> to convert",
-,2,0,,"Header link <a href=""t3://file?uid=1"">external link</a> to convert"
+,2,0,,"t3://file?uid=1"
 
 sys_file_reference
 ,uid,pid,link
