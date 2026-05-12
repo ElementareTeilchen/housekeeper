@@ -1,0 +1,15 @@
+tt_content
+,uid,pid,CType,bodytext
+,1,1,"html","This is text with an <a href=""https://example.com/fileadmin/test_file.png"">external link</a> to convert"
+,2,1,"html","This is another text with <img src=""https://example.com/fileadmin/test_file.png""/> image to convert"
+,3,1,"html","This is another text with relative <img src=""/fileadmin/test_file.png""/> image to convert"
+,4,1,"html","This is another text with a page <a href=""https://example.com/testpage""/> link"
+,5,1,"html","This is another text with <img src=""https://example.com/fileadmin/test_file.png""/> image to convert"
+
+pages
+,uid,pid,slug
+,1,1,"/testpage"
+
+sys_file
+,uid,pid,storage,identifier,missing
+,1,0,1,"/test_file.png",0

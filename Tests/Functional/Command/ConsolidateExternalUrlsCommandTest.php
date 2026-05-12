@@ -26,13 +26,27 @@ class ConsolidateExternalUrlsCommandTest extends AbstractTestCase
                         'enabled' => true,
                         'languageId' => 0,
                         'base' => '/',
-                        'typo3Language' => 'default',
                         'locale' => 'en_US.UTF-8',
-                        'iso-639-1' => 'en',
-                        'navigationTitle' => 'English',
-                        'hreflang' => 'en-us',
-                        'direction' => 'ltr',
+                        'navigationTitle' => 'EN',
                         'flag' => 'us',
+                    ],
+                    [
+                        'title' => 'German',
+                        'enabled' => true,
+                        'languageId' => 1,
+                        'base' => '/de',
+                        'locale' => 'de_DE.UTF-8',
+                        'navigationTitle' => 'DE',
+                        'flag' => 'de',
+                    ],
+                    [
+                        'title' => 'French',
+                        'enabled' => true,
+                        'languageId' => 5,
+                        'base' => '/fr',
+                        'locale' => 'fr_FR.UTF-8',
+                        'navigationTitle' => 'FR',
+                        'flag' => 'fr',
                     ],
                 ],
             ]
@@ -42,48 +56,92 @@ class ConsolidateExternalUrlsCommandTest extends AbstractTestCase
     #[Test]
     public function commandReturnsZeroWithNoMatchingUrls(): void
     {
-        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/tt_content_no_external_urls.csv');
+        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandReturnsZeroWithNoMatchingUrls.csv');
 
         $result = $this->executeConsoleCommand(self::BASE_COMMAND . ' -t tt_content -f bodytext -d example.com');
 
         // Verify no changes were made to the database
-        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/tt_content_no_external_urls.csv');
+        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandReturnsZeroWithNoMatchingUrls.csv');
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
-    public function commandConvertsExternalUrlsToInternalLinks(): void
+    public function commandConvertsExternalPageUrls(): void
     {
-        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/tt_content_external_urls.csv');
+        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandConvertsExternalPageUrls.csv');
 
         $result = $this->executeConsoleCommand(self::BASE_COMMAND . ' -t tt_content -f bodytext -d example.com -p fileadmin');
 
-        // Verify external URLs were converted
-        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/tt_content_external_urls_RESULT.csv');
+        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandConvertsExternalPageUrls_RESULT.csv');
+        self::assertEquals(0, $result['status']);
+    }
+
+    #[Test]
+    public function commandConvertsExternalFileUrls(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandConvertsExternalFileUrls.csv');
+
+        $result = $this->executeConsoleCommand(self::BASE_COMMAND . ' -t tt_content -f bodytext -d example.com -p fileadmin');
+
+        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandConvertsExternalFileUrls_RESULT.csv');
+        self::assertEquals(0, $result['status']);
+    }
+
+    #[Test]
+    public function commandDoesNotConvertCTypeHtmlBodytextValues(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandDoesNotConvertCTypeHtmlBodytextValues.csv');
+
+        $result = $this->executeConsoleCommand(self::BASE_COMMAND . ' -t tt_content -f bodytext -d example.com -p fileadmin');
+
+        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandDoesNotConvertCTypeHtmlBodytextValues.csv');
+        self::assertEquals(0, $result['status']);
+    }
+
+    #[Test]
+    public function commandDoesNotConvertNonTagAttributesInTcaTypeTextFields(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandDoesNotConvertNonTagAttributesInTcaTypeTextFields.csv');
+
+        $result = $this->executeConsoleCommand(self::BASE_COMMAND . ' -t tt_content -f bodytext -d example.com -p fileadmin');
+
+        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandDoesNotConvertNonTagAttributesInTcaTypeTextFields_RESULT.csv');
+        self::assertEquals(0, $result['status']);
+    }
+
+    // TODO: Failing right now. Feature is not implemented yet.
+    #[Test]
+    public function commandConsolidatesUrlsToDifferentLanguagesCorrectly(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandConsolidatesUrlsToDifferentLanguagesCorrectly.csv');
+
+        $result = $this->executeConsoleCommand(self::BASE_COMMAND . ' -t tt_content -f bodytext -d example.com -p fileadmin');
+
+        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandConsolidatesUrlsToDifferentLanguagesCorrectly_RESULT.csv');
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
     public function commandDoesNothingInDryRunMode(): void
     {
-        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/tt_content_external_urls.csv');
+        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandDoesNothingInDryRunMode.csv');
 
         $result = $this->executeConsoleCommand(self::BASE_COMMAND . ' -t tt_content -f bodytext -d example.com --dry-run');
 
         // Verify no changes were made to the database
-        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/tt_content_external_urls.csv');
+        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandDoesNothingInDryRunMode.csv');
         self::assertEquals(0, $result['status']);
     }
 
     #[Test]
     public function commandProcessesAllTcaFieldsWhenAllOptionIsUsed(): void
     {
-        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/multiple_tables_external_urls.csv');
+        $this->importCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandProcessesAllTcaFieldsWhenAllOptionIsUsed.csv');
 
         $result = $this->executeConsoleCommand(self::BASE_COMMAND . ' -a -d example.com');
 
         // Verify external URLs were converted in all configured tables
-        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/multiple_tables_external_urls_RESULT.csv');
+        $this->assertCSVDataSet(__DIR__ . '/DataSet/ConsolidateExternalUrlsCommand/commandProcessesAllTcaFieldsWhenAllOptionIsUsed_RESULT.csv');
         self::assertEquals(0, $result['status']);
     }
 }

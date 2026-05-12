@@ -1,0 +1,10 @@
+tt_content
+,uid,pid,bodytext
+,1,1,"This is another text with a page <a href=""https://example.com/testpage""/> link"
+,2,1,"This is another text with a page <a href=""/testpage""/> link"
+,3,1,"This is another text with a page <a hfef=""https://example.com/testpage""/> link"
+,4,1,"This is another text with a page <a hfef=""https://example-other.com/testpage""/> link"
+
+pages
+,uid,pid,slug
+,1,1,"/testpage"

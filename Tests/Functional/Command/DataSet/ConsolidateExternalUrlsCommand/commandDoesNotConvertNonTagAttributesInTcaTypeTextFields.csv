@@ -1,0 +1,16 @@
+tt_content
+,uid,pid,CType,bodytext
+,1,1,"text","See the following link: <a href=""/testpage""/>/testpage</a>"
+,2,1,"text","See the following link: <a href=""http://example.com/testpage""/>http://example.com/testpage</a>"
+,3,1,"text","See the following link: <a href=""https://example.com/testpage""/>https://example.com/testpage</a>"
+,4,1,"text","See the following file: <img src=""/fileadmin/test_file.png""/>/fileadmin/test_file.png</a>"
+,5,1,"text","See the following file: <img src=""http://example.com/fileadmin/test_file.png""/>http://example.com/fileadmin/test_file.png</a>"
+,6,1,"text","See the following file: <img src=""https://example.com/fileadmin/test_file.png""/>https://example.com/fileadmin/test_file.png</a>"
+
+pages
+,uid,pid,slug
+,1,1,"/testpage"
+
+sys_file
+,uid,pid,storage,identifier,missing
+,1,0,1,"/test_file.png",0
