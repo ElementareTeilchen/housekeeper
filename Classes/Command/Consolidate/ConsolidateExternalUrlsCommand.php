@@ -171,13 +171,6 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             $uid = $record['uid'];
             $pid = $record['pid'];
 
-            if ($tableName === 'tt_content' && $fieldName === 'bodytext' && $record['CType'] === 'html') {
-                if ($this->io->isVeryVerbose()) {
-                    $this->io->writeln("<comment>$recordsProcessed/$totalRecords: skipping CType 'html' record {$tableName}[uid=$uid].{$fieldName} / pid=$pid</comment>");
-                }
-                continue;
-            }
-
             $recordsProcessed++;
 
             if ($this->io->isVeryVerbose()) {
@@ -335,31 +328,50 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
      */
     private function findAllWithExternalUrls(string $tableName, string $fieldName): Result
     {
-        $select = ['uid', 'pid', $fieldName];
         $quote = '';
-
-        if ($tableName === 'tt_content' && $fieldName === 'bodytext') {
-            $select[] = 'CType';
+        if (isset($GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config']['type'])
+            && $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config']['type'] === 'text'
+        ) {
             $quote = '"';
         }
 
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable($tableName);
 
-        $pathPattern = '%' . $quote . '/' . $this->path . '/%';
-        $httpsPattern = '%' . $quote . 'https://' . $this->domain . '/%';
-        $httpPattern = '%' . $quote . 'http://' . $this->domain . '/%';
-
-        return $queryBuilder
-            ->select(...$select)
-            ->from($tableName)
-            ->where(
-                $queryBuilder->expr()->or(
-                    $queryBuilder->expr()->like($fieldName, $queryBuilder->createNamedParameter($pathPattern)),
-                    $queryBuilder->expr()->like($fieldName, $queryBuilder->createNamedParameter($httpsPattern)),
-                    $queryBuilder->expr()->like($fieldName, $queryBuilder->createNamedParameter($httpPattern))
+        $constraints = [
+            $queryBuilder->expr()->or(
+                $queryBuilder->expr()->like(
+                    $fieldName,
+                    $queryBuilder->createNamedParameter(
+                        '%' . $queryBuilder->escapeLikeWildcards("{$quote}/{$this->path}/") . '%',
+                    )
+                ),
+                $queryBuilder->expr()->like(
+                    $fieldName,
+                    $queryBuilder->createNamedParameter(
+                        '%' . $queryBuilder->escapeLikeWildcards("{$quote}http://{$this->domain}/") . '%',
+                    )
+                ),
+                $queryBuilder->expr()->like(
+                    $fieldName,
+                    $queryBuilder->createNamedParameter(
+                        '%' . $queryBuilder->escapeLikeWildcards("{$quote}https://{$this->domain}/") . '%',
+                    )
                 )
             )
+        ];
+
+        if ($tableName === 'tt_content' && $fieldName === 'bodytext') {
+            $constraints[] = $queryBuilder->expr()->neq(
+                'CType',
+                $queryBuilder->createNamedParameter('html')
+            );
+        }
+
+        return $queryBuilder
+            ->select('uid', 'pid', $fieldName)
+            ->from($tableName)
+            ->where(...$constraints)
             ->executeQuery();
     }
 
