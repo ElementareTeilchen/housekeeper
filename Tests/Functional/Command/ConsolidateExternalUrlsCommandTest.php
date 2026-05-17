@@ -109,7 +109,6 @@ class ConsolidateExternalUrlsCommandTest extends AbstractTestCase
         self::assertEquals(0, $result['status']);
     }
 
-    // TODO: Failing right now. Feature is not implemented yet.
     #[Test]
     public function commandConsolidatesUrlsToDifferentLanguagesCorrectly(): void
     {

@@ -31,8 +31,6 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 class ConsolidateExternalUrlsCommand extends AbstractCommand
 {
     private const DEFAULT_PATH = 'fileadmin';
-    private const HTML_CONTENT_TYPE = 'html';
-    private const LINK_PATTERN = '((?:href|src)\\s*=\\s*"|^)(%s)("|$)';
     private const T3_URL_TEMPLATE = 't3://%s?uid=%d%s';
 
     /**
@@ -177,7 +175,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
                 $this->io->writeln("<comment>$recordsProcessed/$totalRecords: checking record {$tableName}[uid=$uid].{$fieldName} / pid=$pid</comment>");
             }
 
-            [$matches, $replacedMatches, $fieldValue] = $this->processPattern($regexp, $fieldValue);
+            [$matches, $replacedMatches, $fieldValue] = $this->processPattern($regexp, $fieldValue, $record);
 
             $totalMatches += $matches;
             $totalReplacedMatches += $replacedMatches;
@@ -212,9 +210,10 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
      *
      * @param string $regexp Regular expression
      * @param string $fieldValue Field value
+     * @param array<string, mixed> $record Current database record
      * @return array{int, int, string} Array containing [matches count, replaced matches count, updated field value]
      */
-    private function processPattern(string $regexp, string $fieldValue): array
+    private function processPattern(string $regexp, string $fieldValue, array $record): array
     {
         $replacedMatches = 0;
         if (!preg_match_all('%' . $regexp . '%', $fieldValue, $matches)) {
@@ -223,7 +222,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
 
         $matchCount = count($matches[0]);
         for ($i = 0; $i < $matchCount; $i++) {
-            [$changed, $fieldValue] = $this->processMatch($fieldValue, $matches, $i);
+            [$changed, $fieldValue] = $this->processMatch($fieldValue, $matches, $i, $record);
             if ($changed) {
                 $replacedMatches++;
             }
@@ -238,9 +237,10 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
      * @param string $fieldValue Field value
      * @param array<int, array<int, string>> $matches Matches from preg_match_all
      * @param int $i Match index
+     * @param array<string, mixed> $record Current database record
      * @return array{bool, string} Array containing [was changed, updated field value]
      */
-    private function processMatch(string $fieldValue, array $matches, int $i): array
+    private function processMatch(string $fieldValue, array $matches, int $i, array $record): array
     {
         $prefix = $matches[1][$i];
         $urlMatch = $matches[2][$i];
@@ -263,7 +263,9 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
         }
 
         $uid = $this->resolveUid($result);
-        $t3Url = sprintf(self::T3_URL_TEMPLATE, $type, $uid, $anchor);
+        $t3Url = $type === 'page'
+            ? $this->buildPageT3Url($uid, (int)($record['sys_language_uid'] ?? 0), (int)$result['sys_language_uid'], $anchor)
+            : sprintf(self::T3_URL_TEMPLATE, $type, $uid, $anchor);
 
         if ($this->io->isVerbose()) {
             $this->io->writeln(sprintf('<info>found %s: %d, replacing: %s with %s</info>', $type, $uid, $urlMatch, $t3Url));
@@ -272,6 +274,16 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
         $updatedValue = str_replace($prefix . $urlMatch, $prefix . $t3Url, $fieldValue);
 
         return [true, $updatedValue];
+    }
+
+    /**
+     * Build an internal page URL with a language parameter when linking to another language.
+     */
+    private function buildPageT3Url(int $uid, int $sourceLanguageId, int $targetLanguageId, string $anchor): string
+    {
+        $languageParameter = $sourceLanguageId !== $targetLanguageId ? '&L=' . $targetLanguageId : '';
+
+        return sprintf(self::T3_URL_TEMPLATE, 'page', $uid, $languageParameter . $anchor);
     }
 
     /**
@@ -368,8 +380,13 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             );
         }
 
+        $selectFields = ['uid', 'pid', $fieldName];
+        if (isset($GLOBALS['TCA'][$tableName]['columns']['sys_language_uid'])) {
+            $selectFields[] = 'sys_language_uid';
+        }
+
         return $queryBuilder
-            ->select('uid', 'pid', $fieldName)
+            ->select(...$selectFields)
             ->from($tableName)
             ->where(...$constraints)
             ->executeQuery();
@@ -434,12 +451,13 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
         $languageId = 0;
         if (!empty($this->languages) && preg_match('%^/[a-zA-Z]{2}/.*%', $slug)) {
             foreach ($this->languages as $language) {
-                if ($language['languageId'] > 0 && str_starts_with($slug, (string)$language['base'])) {
+                $base = rtrim((string)$language['base'], '/');
+                if ($language['languageId'] > 0 && ($slug === $base || str_starts_with($slug, $base . '/'))) {
                     if ($this->io->isDebug()) {
                         $this->io->writeln("\t\t<comment>found language {$language['languageId']} for  $slug</comment>");
                     }
                     $languageId = $language['languageId'];
-                    $slug = str_replace($language['base'], '/', $slug);
+                    $slug = '/' . ltrim(substr($slug, strlen($base)), '/');
                     break;
                 }
             }
@@ -449,7 +467,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             ->getQueryBuilderForTable('pages');
 
         $result = $queryBuilder
-            ->select('uid', 'slug', 'l10n_parent')
+            ->select('uid', 'slug', 'l10n_parent', 'sys_language_uid')
             ->from('pages')
             ->where(
                 $queryBuilder->expr()->eq('slug', $queryBuilder->createNamedParameter($slug)),
