@@ -4,17 +4,8 @@ declare(strict_types=1);
 
 namespace Elementareteilchen\Housekeeper\Tests\Functional\Command;
 
-use Symfony\Component\Console\Input\StringInput;
-use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Yaml\Yaml;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use TYPO3\CMS\Core\Authentication\CommandLineUserAuthentication;
-use TYPO3\CMS\Core\Console\Application as ConsoleApplication;
-use TYPO3\CMS\Core\Console\CommandRegistry;
-use TYPO3\CMS\Core\Core\Bootstrap;
 use TYPO3\CMS\Core\Database\Connection;
-use TYPO3\CMS\Core\Information\Typo3Version;
-use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Resource\Index\Indexer;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
 use TYPO3\CMS\Core\Resource\StorageRepository;
@@ -187,19 +178,26 @@ abstract class AbstractTestCase extends FunctionalTestCase
      */
     protected function executeConsoleCommand(string $cmdline, ...$args): array
     {
-        $input = new StringInput(vsprintf($cmdline, array_map(escapeshellarg(...), $args)));
-        $input->setInteractive(false);
-        $output = new BufferedOutput();
+        $typo3File = __DIR__ . '/../Fixtures/typo3-cli.php';
+        if (!file_exists($typo3File)) {
+            throw new \RuntimeException(
+                sprintf('Executable file <typo3> not found (using path <%s>).', $typo3File),
+                6593734613
+            );
+        }
 
-        Bootstrap::initializeBackendUser(CommandLineUserAuthentication::class);
-        $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->createFromUserPreferences($GLOBALS['BE_USER']);
+        $cmd = vsprintf('TYPO3_PATH_ROOT=' . escapeshellarg($this->instancePath)
+            . ' TYPO3_PATH_APP=' . escapeshellarg($this->instancePath)
+            . ' ' . PHP_BINARY . ' ' . escapeshellarg($typo3File)
+            . ' ' . $cmdline . ' 2>&1', array_map(escapeshellarg(...), $args));
 
-        $application = new ConsoleApplication('TYPO3 CMS', (new Typo3Version())->getVersion());
-        $application->setAutoExit(false);
-        $application->setDispatcher($this->get(EventDispatcherInterface::class));
-        $application->setCommandLoader($this->get(CommandRegistry::class));
-        $status = $application->run($input, $output);
-        $outputContent = $output->fetch();
+        $outputContent = '';
+
+        $handle = popen($cmd, 'r');
+        while (!feof($handle)) {
+            $outputContent .= fgets($handle, 4096);
+        }
+        $status = pclose($handle);
 
         // append output to file
         // make sure the directory exists
