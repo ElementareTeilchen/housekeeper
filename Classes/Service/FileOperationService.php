@@ -157,8 +157,8 @@ class FileOperationService
             // TODO: Refactor once v12 support is dropped
             if (class_exists(DuplicationBehavior::class)) {
                 $this->extendedFileUtility->setExistingFilesConflictMode(DuplicationBehavior::CANCEL);
-            } elseif (class_exists(\TYPO3\CMS\Core\Resource\DuplicationBehavior::class)) {
-                $this->extendedFileUtility->setExistingFilesConflictMode(\TYPO3\CMS\Core\Resource\DuplicationBehavior::CANCEL);
+            } elseif (class_exists($legacyDuplicationBehaviorClass = 'TYPO3\\CMS\\Core\\Resource\\' . 'DuplicationBehavior')) {
+                $this->extendedFileUtility->setExistingFilesConflictMode(constant($legacyDuplicationBehaviorClass . '::CANCEL'));
             }
 
             $startArguments = [$fileCommand];
