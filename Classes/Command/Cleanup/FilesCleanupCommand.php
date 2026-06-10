@@ -12,8 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Resource\Search\FileSearchDemand;
 use TYPO3\CMS\Core\Resource\Search\Result\FileSearchResultInterface;
-use TYPO3\CMS\Core\Resource\Security\FileNameValidator;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Command for cleaning up files by a specified identifier pattern
@@ -34,7 +32,7 @@ class FilesCleanupCommand extends AbstractCleanupCommand
     /**
      * Configure the command
      */
-    public function configure()
+    public function configure(): void
     {
         $this->setHelp('
 Cleanup files via a given identifier.
@@ -136,7 +134,7 @@ their path is written to a log file in var/log for further inspection.
 
             // For writable storages, also check if file still exists after deletion attempt
             // For non-writable storages, rely only on the API response
-            $deletionFailed = !$deletionSuccess || ($this->isWritableStorage && file_exists($filePath)); // @phpstan-ignore-line - file_exists may not be true as we try to delete it inbetween
+            $deletionFailed = !$deletionSuccess || ($this->isWritableStorage && file_exists($filePath));
 
             if ($deletionFailed) {
                 $failedCount++;
@@ -181,7 +179,9 @@ their path is written to a log file in var/log for further inspection.
                     $this->io->writeln('<warning>Failed to remove empty folder: ' . $dir . '</warning>');
                 }
             }
-            if (!$recursive) break;
+            if (!$recursive) {
+                break;
+            }
             $dir = dirname($dir);
         }
     }

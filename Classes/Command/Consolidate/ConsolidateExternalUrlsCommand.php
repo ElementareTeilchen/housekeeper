@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elementareteilchen\Housekeeper\Command\Consolidate;
 
+use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Result;
 use Elementareteilchen\Housekeeper\Command\AbstractCommand;
@@ -61,7 +62,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
     /**
      * Configure the command
      */
-    public function configure()
+    public function configure(): void
     {
         $this->setHelp('
         Finds all links (href) and images (src) with a given path or URL pattern within the given table and field
@@ -302,7 +303,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
             $path = preg_replace('%https?://' . $this->domain . '%', '', $url);
         }
 
-        $parts = explode('#', $path);
+        $parts = explode('#', (string) $path);
         $identifier = trim($parts[0]);
         $anchor = isset($parts[1]) ? '#' . ($type === 'page' ? ltrim($parts[1], 'c') : $parts[1]) : '';
 
@@ -336,7 +337,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
      *
      * @param string $tableName The database table name
      * @param string $fieldName The database field name
-     * @throws \Doctrine\DBAL\Exception
+     * @throws Exception
      */
     private function findAllWithExternalUrls(string $tableName, string $fieldName): Result
     {
@@ -449,7 +450,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
     public function findPageBySlug(string $slug): Result
     {
         $languageId = 0;
-        if (!empty($this->languages) && preg_match('%^/[a-zA-Z]{2}/.*%', $slug)) {
+        if ($this->languages !== [] && preg_match('%^/[a-zA-Z]{2}/.*%', $slug)) {
             foreach ($this->languages as $language) {
                 $base = rtrim((string)$language['base'], '/');
                 if ($language['languageId'] > 0 && ($slug === $base || str_starts_with($slug, $base . '/'))) {
@@ -483,7 +484,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
      * @param string $regexp Regular expression
      * @param string $fieldValue Field value
      */
-    public function logNoMatches(string $regexp, string $fieldValue)
+    public function logNoMatches(string $regexp, string $fieldValue): void
     {
         $this->io->writeln("No matches found with regex $regexp");
         if ($this->io->isDebug()) {

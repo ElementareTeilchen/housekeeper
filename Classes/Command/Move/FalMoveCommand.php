@@ -41,7 +41,7 @@ class FalMoveCommand extends AbstractCommand
     /**
      * Configure the command
      */
-    public function configure()
+    public function configure(): void
     {
         $this->setHelp('
 Move or rename a file. Specify the source and the target with optional storageId, default is 1. Works similar to bash mv command. Move between different storages only works with files, not folders.

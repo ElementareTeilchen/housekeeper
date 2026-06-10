@@ -22,7 +22,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 class SysLogCleanupCommand extends AbstractCommand
 {
 
-	public function configure()
+	public function configure(): void
 	{
 		$this->setDescription('Cleanup TYPO3 sys_log table from outdated entries.');
 		$this->setHelp('

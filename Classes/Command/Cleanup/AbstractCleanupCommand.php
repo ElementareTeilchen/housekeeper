@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elementareteilchen\Housekeeper\Command\Cleanup;
 
+use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
 use Elementareteilchen\Housekeeper\Command\AbstractCommand;
 use Elementareteilchen\Housekeeper\Service\FileOperationService;
 use Symfony\Component\Console\Input\InputInterface;
@@ -117,7 +118,7 @@ class AbstractCleanupCommand extends AbstractCommand
                 $this->storagePath = $this->getFullStoragePath();
                 $this->io->info('Using storage path: ' . $this->storagePath);
             }
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             $this->io->error('Storage ' . $this->storageId . ' not found');
             exit(1);
         }
@@ -151,7 +152,7 @@ class AbstractCleanupCommand extends AbstractCommand
     protected function getFullStoragePath(): string
     {
         return Environment::getPublicPath() . DIRECTORY_SEPARATOR .
-            rtrim($this->getFolderFromStorage('/')->getPublicUrl(), '/');
+            rtrim((string) $this->getFolderFromStorage('/')->getPublicUrl(), '/');
     }
 
     /**
@@ -159,7 +160,7 @@ class AbstractCleanupCommand extends AbstractCommand
      *
      * @param string $path Path within the storage
      * @return Folder|InaccessibleFolder Folder object
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException
+     * @throws InsufficientFolderAccessPermissionsException
      */
     protected function getFolderFromStorage(string $path): Folder|InaccessibleFolder
     {
@@ -212,7 +213,7 @@ class AbstractCleanupCommand extends AbstractCommand
         // Ensure log directory exists
         $logDirectory = dirname($logFileFailed);
         if (!is_dir($logDirectory) && !mkdir($logDirectory, 0775, true) && !is_dir($logDirectory)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $logDirectory));
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $logDirectory), 5812642500);
         }
 
         file_put_contents($logFileFailed, $file . PHP_EOL, FILE_APPEND | LOCK_EX);

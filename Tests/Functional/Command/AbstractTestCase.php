@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elementareteilchen\Housekeeper\Tests\Functional\Command;
 
+use Symfony\Component\Yaml\Yaml;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Resource\Index\Indexer;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
@@ -70,11 +71,7 @@ abstract class AbstractTestCase extends FunctionalTestCase
         $storage = $storageRepository->findByUid($storageUid);
 
         foreach ($initialFileStructure as $folderIdentifier => $fileNames) {
-            if ($folderIdentifier === '') {
-                $folder = $storage->getRootLevelFolder(false);
-            } else {
-                $folder = $storage->createFolder($folderIdentifier);
-            }
+            $folder = $folderIdentifier === '' ? $storage->getRootLevelFolder(false) : $storage->createFolder($folderIdentifier);
             foreach ($fileNames as $fileName) {
                 $storage->createFile($fileName, $folder);
             }
@@ -113,7 +110,7 @@ abstract class AbstractTestCase extends FunctionalTestCase
         GeneralUtility::mkdir_deep($siteDir);
         GeneralUtility::writeFile(
             "{$siteDir}/config.yaml",
-            \Symfony\Component\Yaml\Yaml::dump($configuration, 99),
+            Yaml::dump($configuration, 99),
             true
         );
     }
@@ -180,7 +177,7 @@ abstract class AbstractTestCase extends FunctionalTestCase
         $typo3File = __DIR__ . '/../../../.Build/bin/typo3';
         if (!file_exists($typo3File)) {
             throw new \RuntimeException(
-                sprintf('Executable file <typo3> not found (using path <%s>). Make sure config:bin-dir is set to .Build/bin in composer.json', $typo3File)
+                sprintf('Executable file <typo3> not found (using path <%s>). Make sure config:bin-dir is set to .Build/bin in composer.json', $typo3File), 6593734613
             );
         }
 
@@ -197,8 +194,8 @@ abstract class AbstractTestCase extends FunctionalTestCase
 
         // append output to file
         // make sure the directory exists
-        if (!file_exists(dirname($this->logFile))) {
-            mkdir(dirname($this->logFile), 0777, true);
+        if (!file_exists(dirname((string) $this->logFile))) {
+            mkdir(dirname((string) $this->logFile), 0777, true);
         }
         $entry = $cmdline . "\n" . $output . "\n########################\n\n";
         file_put_contents($this->logFile, $entry, FILE_APPEND);
@@ -216,7 +213,7 @@ abstract class AbstractTestCase extends FunctionalTestCase
     {
         try {
             $storage->getFile($identifier);
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return true;
         }
         return false;

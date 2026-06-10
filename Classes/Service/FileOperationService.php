@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elementareteilchen\Housekeeper\Service;
 
+use TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior;
 use Elementareteilchen\Housekeeper\Helper\CommandHelper;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
@@ -44,7 +45,7 @@ class FileOperationService
      */
     public function deleteFile(string $identifier, int $storageId): bool
     {
-        if (substr($identifier, 0, 1) === '/') {
+        if (str_starts_with($identifier, '/')) {
             $identifier = $storageId . ':' . substr($identifier, 1);
         }
 
@@ -154,8 +155,8 @@ class FileOperationService
     {
         try {
             // TODO: Refactor once v12 support is dropped
-            if (class_exists(\TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior::class)) {
-                $this->extendedFileUtility->setExistingFilesConflictMode(\TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior::CANCEL);
+            if (class_exists(DuplicationBehavior::class)) {
+                $this->extendedFileUtility->setExistingFilesConflictMode(DuplicationBehavior::CANCEL);
             } elseif (class_exists(\TYPO3\CMS\Core\Resource\DuplicationBehavior::class)) {
                 $this->extendedFileUtility->setExistingFilesConflictMode(\TYPO3\CMS\Core\Resource\DuplicationBehavior::CANCEL);
             }
@@ -165,7 +166,7 @@ class FileOperationService
             if ($startMethod->getNumberOfRequiredParameters() > 1) {
                 $startArguments[] = [];
             }
-            call_user_func_array([$this->extendedFileUtility, 'start'], $startArguments);
+            call_user_func_array($this->extendedFileUtility->start(...), $startArguments);
             return $this->extendedFileUtility->processData();
         } catch (Exception $e) {
             $this->io->writeln('<error>' . $e->getMessage() . '</error>');

@@ -52,7 +52,7 @@ class MissingFilesCleanupCommand extends AbstractCleanupCommand
     /**
      * Configure the command
      */
-    public function configure()
+    public function configure(): void
     {
         $this->setHelp('
 Cleanup files missing files.
@@ -148,7 +148,7 @@ their path is written to a log file in var/log for further inspection.
 
             // For writable storages, also check if file still exists after deletion attempt
             // For non-writable storages, rely only on the API response
-            $deletionFailed = !$deletionSuccess || ($this->isWritableStorage && file_exists($filePath)); // @phpstan-ignore-line - file_exists may not be true as we try to delete it inbetween
+            $deletionFailed = !$deletionSuccess || ($this->isWritableStorage && file_exists($filePath));
 
             if ($deletionFailed) {
                 $failedCount++;
@@ -248,13 +248,14 @@ their path is written to a log file in var/log for further inspection.
 
         // Skip the first empty element when path starts with '/'
         $startIndex = $parts[0] === '' ? 1 : 0;
+        $counter = count($parts);
 
-        for ($i = $startIndex; $i < count($parts); $i++) {
+        for ($i = $startIndex; $i < $counter; $i++) {
             $path = $path . ($path && $startIndex === 1 ? '/' : '') . $parts[$i];
 
             $fileNotExists = !file_exists($path);
             if ($fileNotExists && !mkdir($path, 0775)) {
-                throw new \RuntimeException('Directory "' . $path . '" could not be created');
+                throw new \RuntimeException('Directory "' . $path . '" could not be created', 7074454268);
             }
 
             // if it now exists, add it to the list
