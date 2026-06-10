@@ -174,7 +174,7 @@ their path is written to a log file in var/log for further inspection.
      * For non-writable storages, touchFile is skipped as they don't support
      * local file operations. The files can be deleted directly via the TYPO3 API.
      *
-     * @param array $fileData File data containing identifier and uid
+     * @param array $record File data containing identifier and uid
      * @param string $file File path (empty for non-writable storages)
      * @param string $directory Directory path (empty for non-writable storages)
      * @return bool Whether the file was successfully prepared
@@ -346,11 +346,10 @@ their path is written to a log file in var/log for further inspection.
      * Find file references that point to non-existing files in the system
      *
      * @param int $storageId The storage ID
-     * @return array An array of missing file identifiers
+     * @return Result Result with missing file identifiers
      */
     private function findMissingFiles(int $storageId): Result
     {
-        $missingFiles = [];
         // Select all files in the reference table
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable('sys_file');

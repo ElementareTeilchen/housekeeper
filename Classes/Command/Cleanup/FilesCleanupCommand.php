@@ -98,7 +98,7 @@ their path is written to a log file in var/log for further inspection.
      * Implements the Template Method pattern to allow customization in subclasses through
      * the hook methods beforeFileDelete() and afterFailedDelete().
      *
-     * @param FileSearchResultInterface $files The collection of file identifiers to process
+     * @param FileSearchResultInterface $fileSearchResults The collection of file identifiers to process
      * @return array [deletedCount, failedCount]
      */
     protected function processFiles(FileSearchResultInterface $fileSearchResults): array
@@ -160,11 +160,11 @@ their path is written to a log file in var/log for further inspection.
      *
      * Only works for writable storages where local file operations are supported
      *
-     * @param string $path Current path to check
+     * @param string $dir Current path to check
      * @param bool $recursive Recursively remove empty parent folders
      * @return void
      */
-    protected function removeEmptyFolder($dir, $recursive = false): void
+    protected function removeEmptyFolder(string $dir, bool $recursive = false): void
     {
         // Only attempt to remove folders for writable storages
         if (!$this->isWritableStorage) {

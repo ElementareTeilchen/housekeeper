@@ -565,7 +565,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
 
     /**
      * @param array $matches
-     * @return array
+     * @return void
      */
     public function logTCAMatches(array $matches): void
     {
@@ -582,6 +582,7 @@ class ConsolidateExternalUrlsCommand extends AbstractCommand
      */
     public function printAllResults(array $allResults): void
     {
+        $resultsMatrix = [];
         foreach ($allResults as $resultKey => $result) {
             // build matrix of all results
             $resultsMatrix[] = [

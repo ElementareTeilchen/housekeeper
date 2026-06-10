@@ -11,7 +11,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Resource\StorageRepository;
 
@@ -30,13 +29,11 @@ class FalMoveCommand extends AbstractCommand
      * @param ResourceFactory $resourceFactory TYPO3 resource factory
      * @param StorageRepository $storageRepository TYPO3 storage repository
      * @param FileOperationService $fileOperationService Service for file operations
-     * @param EventDispatcher $eventDispatcher TYPO3 event dispatcher
      */
     public function __construct(
         ResourceFactory $resourceFactory,
         StorageRepository $storageRepository,
-        private readonly FileOperationService $fileOperationService,
-        private readonly EventDispatcher $eventDispatcher
+        private readonly FileOperationService $fileOperationService
     ) {
         parent::__construct($resourceFactory, $storageRepository);
     }
@@ -140,7 +137,7 @@ typo3 housekeeper:move 1:old.pdf 2:other-path/new.pdf
      *
      * @param mixed $source Source path or identifier
      * @param mixed $target Target path or identifier
-     * @param false|string $alternativeFileName Optional alternative filename
+     * @param string|null $alternativeFileName Optional alternative filename
      * @return int Command result status
      */
     public function move(mixed $source, mixed $target, null|string $alternativeFileName): int

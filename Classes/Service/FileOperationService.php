@@ -159,7 +159,13 @@ class FileOperationService
             } elseif (class_exists(\TYPO3\CMS\Core\Resource\DuplicationBehavior::class)) {
                 $this->extendedFileUtility->setExistingFilesConflictMode(\TYPO3\CMS\Core\Resource\DuplicationBehavior::CANCEL);
             }
-            $this->extendedFileUtility->start($fileCommand);
+
+            $startArguments = [$fileCommand];
+            $startMethod = new \ReflectionMethod($this->extendedFileUtility, 'start');
+            if ($startMethod->getNumberOfRequiredParameters() > 1) {
+                $startArguments[] = [];
+            }
+            call_user_func_array([$this->extendedFileUtility, 'start'], $startArguments);
             return $this->extendedFileUtility->processData();
         } catch (Exception $e) {
             $this->io->writeln('<error>' . $e->getMessage() . '</error>');
