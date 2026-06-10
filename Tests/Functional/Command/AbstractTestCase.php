@@ -4,8 +4,17 @@ declare(strict_types=1);
 
 namespace Elementareteilchen\Housekeeper\Tests\Functional\Command;
 
+use Symfony\Component\Console\Input\StringInput;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Yaml\Yaml;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use TYPO3\CMS\Core\Authentication\CommandLineUserAuthentication;
+use TYPO3\CMS\Core\Console\Application as ConsoleApplication;
+use TYPO3\CMS\Core\Console\CommandRegistry;
+use TYPO3\CMS\Core\Core\Bootstrap;
 use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Information\Typo3Version;
+use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Resource\Index\Indexer;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
 use TYPO3\CMS\Core\Resource\StorageRepository;
@@ -15,6 +24,10 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 abstract class AbstractTestCase extends FunctionalTestCase
 {
     protected $logFile = __DIR__ . '/../../../.Build/var/log/last_command_output.txt';
+
+    protected array $testExtensionsToLoad = [
+        'elementareteilchen/housekeeper',
+    ];
 
     /**
      * Create a fresh storage record.
@@ -174,35 +187,31 @@ abstract class AbstractTestCase extends FunctionalTestCase
      */
     protected function executeConsoleCommand(string $cmdline, ...$args): array
     {
-        $typo3File = __DIR__ . '/../../../.Build/bin/typo3';
-        if (!file_exists($typo3File)) {
-            throw new \RuntimeException(
-                sprintf('Executable file <typo3> not found (using path <%s>). Make sure config:bin-dir is set to .Build/bin in composer.json', $typo3File), 6593734613
-            );
-        }
+        $input = new StringInput(vsprintf($cmdline, array_map(escapeshellarg(...), $args)));
+        $input->setInteractive(false);
+        $output = new BufferedOutput();
 
-        $cmd = vsprintf(PHP_BINARY . ' ' . $typo3File
-            . ' ' . $cmdline, array_map(escapeshellarg(...), $args));
+        Bootstrap::initializeBackendUser(CommandLineUserAuthentication::class);
+        $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->createFromUserPreferences($GLOBALS['BE_USER']);
 
-        $output = '';
-
-        $handle = popen($cmd, 'r');
-        while (!feof($handle)) {
-            $output .= fgets($handle, 4096);
-        }
-        $status = pclose($handle);
+        $application = new ConsoleApplication('TYPO3 CMS', (new Typo3Version())->getVersion());
+        $application->setAutoExit(false);
+        $application->setDispatcher($this->get(EventDispatcherInterface::class));
+        $application->setCommandLoader($this->get(CommandRegistry::class));
+        $status = $application->run($input, $output);
+        $outputContent = $output->fetch();
 
         // append output to file
         // make sure the directory exists
         if (!file_exists(dirname((string) $this->logFile))) {
             mkdir(dirname((string) $this->logFile), 0777, true);
         }
-        $entry = $cmdline . "\n" . $output . "\n########################\n\n";
+        $entry = $cmdline . "\n" . $outputContent . "\n########################\n\n";
         file_put_contents($this->logFile, $entry, FILE_APPEND);
 
         return [
             'status' => $status,
-            'output' => $output,
+            'output' => $outputContent,
         ];
     }
 
