@@ -4,11 +4,12 @@
 declare(strict_types=1);
 
 $classLoader = require dirname(__DIR__, 3) . '/.Build/vendor/autoload.php';
+$composerMode = (new \TYPO3\CMS\Core\Information\Typo3Version())->getMajorVersion() >= 13 ? false : null;
 
 \TYPO3\TestingFramework\Core\SystemEnvironmentBuilder::run(
     1,
     \TYPO3\CMS\Core\Core\SystemEnvironmentBuilder::REQUESTTYPE_CLI,
-    false
+    $composerMode
 );
 
 \TYPO3\CMS\Core\Core\Bootstrap::init($classLoader, true)

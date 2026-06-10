@@ -50,7 +50,7 @@
         <ini name="error_reporting" value="E_ALL"/>
         <env name="TYPO3_CONTEXT" value="Testing"/>
     </php>
-    <source ignoreIndirectDeprecations="true" restrictNotices="true" restrictWarnings="true">
+    <source restrictNotices="true" restrictWarnings="true">
         <include>
             <directory suffix=".php">../../Classes</directory>
         </include>
